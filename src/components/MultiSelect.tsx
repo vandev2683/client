@@ -249,7 +249,7 @@ export const MultiAsyncSelect = React.forwardRef<HTMLButtonElement, Props>(
                       <span>{`+ ${selectedValues.length - maxCount}`}</span>
 
                       <div
-                        className='ml-2 size-4 cursor-pointer'
+                        className='ml-1 size-4 cursor-pointer'
                         onClick={(event) => {
                           event.stopPropagation()
                           clearExtraOptions()

@@ -1,10 +1,9 @@
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
-import { Trash2, Edit, Save, X, Package } from 'lucide-react'
+import { Package } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import type { ProductVariantsType, UpsertVariantBodyType } from '@/schemaValidations/product.schema'
 
 export function generateVariants(variants: ProductVariantsType) {
@@ -37,45 +36,26 @@ export default function VariantsList({
   variants: UpsertVariantBodyType[]
   setVariants: (variants: UpsertVariantBodyType[]) => void
 }) {
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editValues, setEditValues] = useState({ price: 0, stock: 0 })
-
   // Sử dụng useEffect để tạo variants từ variantsConfig khi component mount hoặc variantsConfig thay đổi
   useEffect(() => {
     if (variantsConfig.length > 0) {
+      if (variantsConfig[0].type === '') {
+        // Nếu variantsConfig có phần tử đầu tiên không có type, thì tạo một biến thể mặc định
+        setVariants([
+          {
+            value: 'default',
+            price: 0,
+            stock: 0,
+            thumbnail: null
+          }
+        ])
+
+        return
+      }
       const generatedVariants = generateVariants(variantsConfig)
       setVariants(generatedVariants)
     }
   }, [variantsConfig, setVariants])
-
-  const handleEdit = (variant: UpsertVariantBodyType) => {
-    setEditingId(variant.value)
-    setEditValues({ price: variant.price, stock: variant.stock })
-  }
-
-  const handleSave = (value: string) => {
-    const updatedVariants = variants.map((variant) =>
-      variant.value === value ? { ...variant, price: editValues.price, stock: editValues.stock } : variant
-    )
-    setVariants(updatedVariants)
-    setEditingId(null)
-  }
-
-  const handleCancel = () => {
-    setEditingId(null)
-  }
-
-  const handleDelete = (value: string) => {
-    const confirmed = window.confirm('Bạn có chắc chắn muốn xóa biến thể này không?')
-    if (confirmed) {
-      const updatedVariants = variants.filter((variant) => variant.value !== value)
-      setVariants(updatedVariants)
-    }
-  }
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN').format(price) + '₫'
-  }
 
   const parseAttributes = (value: string) => {
     const attributes: Record<string, string> = {}
@@ -107,7 +87,7 @@ export default function VariantsList({
           const attributes = parseAttributes(variant.value)
 
           return (
-            <Card key={variant.value} className='border border-gray-200 hover:shadow-md transition-shadow'>
+            <Card key={variant.value + index} className='border border-gray-200 hover:shadow-md transition-shadow'>
               <CardContent className=''>
                 <div className='flex items-center justify-between'>
                   <div className='max-w-[60%]'>
@@ -123,66 +103,37 @@ export default function VariantsList({
                     </div>
                   </div>
 
-                  <div className='flex items-center gap-6'>
-                    {editingId === variant.value ? (
-                      <div className='flex items-center gap-2'>
-                        <div className='flex flex-col gap-1'>
-                          <Input
-                            type='number'
-                            value={editValues.price}
-                            onChange={(e) => setEditValues((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                            className='w-24 h-8 text-sm'
-                            placeholder='Giá'
-                          />
-                          <span className='text-xs text-gray-500'>Giá</span>
-                        </div>
-                        <div className='flex flex-col gap-1'>
-                          <Input
-                            type='number'
-                            value={editValues.stock}
-                            onChange={(e) => setEditValues((prev) => ({ ...prev, stock: Number(e.target.value) }))}
-                            className='w-20 h-8 text-sm'
-                            placeholder='Kho'
-                          />
-                          <span className='text-xs text-gray-500'>Kho</span>
-                        </div>
-                        <div className='flex gap-1'>
-                          <Button size='sm' onClick={() => handleSave(variant.value)} className='h-8'>
-                            <Save className='w-4 h-4 mr-1' /> Lưu
-                          </Button>
-                          <Button size='sm' variant='ghost' onClick={handleCancel} className='h-8'>
-                            <X className='w-4 h-4 mr-1' /> Hủy
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className='text-right'>
-                          <p className='font-semibold text-gray-900'>{formatPrice(variant.price)}</p>
-                          <p className='text-sm text-gray-500'>Kho: {variant.stock}</p>
-                        </div>
-                        <div className='flex gap-1'>
-                          <Button
-                            size='sm'
-                            variant='ghost'
-                            onClick={() => handleEdit(variant)}
-                            className='h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600'
-                            title='Chỉnh sửa'
-                          >
-                            <Edit className='w-4 h-4' />
-                          </Button>
-                          <Button
-                            size='sm'
-                            variant='ghost'
-                            className='h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600'
-                            onClick={() => handleDelete(variant.value)}
-                            title='Xóa'
-                          >
-                            <Trash2 className='w-4 h-4' />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                  <div className='flex flex-col gap-3'>
+                    <div className='flex items-center gap-2'>
+                      <span className='text-xs text-gray-500 w-6'>Giá</span>
+                      <Input
+                        type='number'
+                        value={variant.price}
+                        onChange={(e) => {
+                          const updatedVariants = variants.map((v) =>
+                            v.value === variant.value ? { ...v, price: Number(e.target.value) } : v
+                          )
+                          setVariants(updatedVariants)
+                        }}
+                        className='w-24 h-8 text-sm'
+                        placeholder='Giá'
+                      />
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <span className='text-xs text-gray-500 w-6'>Kho</span>
+                      <Input
+                        type='number'
+                        value={variant.stock}
+                        onChange={(e) => {
+                          const updatedVariants = variants.map((v) =>
+                            v.value === variant.value ? { ...v, stock: Number(e.target.value) } : v
+                          )
+                          setVariants(updatedVariants)
+                        }}
+                        className='w-24 h-8 text-sm'
+                        placeholder='Kho'
+                      />
+                    </div>
                   </div>
                 </div>
               </CardContent>

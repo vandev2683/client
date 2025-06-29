@@ -24,7 +24,7 @@ import VariantsConfig from '@/components/VariantsConfig'
 import VariantsList from '@/components/VariantsList'
 
 export default function AddProduct() {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(false)
   const [files, setFiles] = useState<(File | string)[]>([])
 
   const form = useForm<CreateProductBodyType>({
@@ -42,14 +42,7 @@ export default function AddProduct() {
       ],
       categories: [],
       tags: [],
-      variants: [
-        {
-          value: 'default',
-          price: 0,
-          stock: 0,
-          thumbnail: null
-        }
-      ]
+      variants: []
     }
   })
 
@@ -106,11 +99,11 @@ export default function AddProduct() {
         images: uploadedImageUrls
       }
 
-      console.log(body)
-      // await createProductMutation.mutateAsync(body)
-      // reset()
+      await createProductMutation.mutateAsync(body)
+      reset()
       toast.success('Thêm sản phẩm thành công')
     } catch (error) {
+      console.error(error)
       handleError(error, form.setError)
     }
   }
@@ -281,7 +274,9 @@ export default function AddProduct() {
                       <Label htmlFor='variantsConfig'>Tạo biến thể</Label>
                       <div className='col-span-3 w-full space-y-2 '>
                         <VariantsConfig variantsConfig={field.value} setVariantsConfig={field.onChange} />
-                        <FormMessage />
+                        <div>
+                          <FormMessage />
+                        </div>
                       </div>
                     </div>
                   </FormItem>
@@ -302,7 +297,9 @@ export default function AddProduct() {
                           variants={field.value}
                           setVariants={field.onChange}
                         />
-                        <FormMessage />
+                        <div>
+                          <FormMessage />
+                        </div>
                       </div>
                     </div>
                   </FormItem>

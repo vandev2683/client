@@ -6,6 +6,8 @@ import { Plus, Trash2, GripVertical, RefreshCcw } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { ProductVariantsType } from '@/schemaValidations/product.schema'
+import { useRef } from 'react'
+import type { KeyboardEvent } from 'react'
 
 export default function VariantsConfig({
   variantsConfig,
@@ -14,6 +16,8 @@ export default function VariantsConfig({
   variantsConfig: ProductVariantsType
   setVariantsConfig: (configs: ProductVariantsType) => void
 }) {
+  const inputRefs = useRef<Record<string, HTMLInputElement>>({})
+
   // Thêm thuộc tính mới
   const handleAddAttribute = () => {
     const newAttribute = {
@@ -63,6 +67,13 @@ export default function VariantsConfig({
       const updatedConfig = [...variantsConfig]
       updatedConfig[attributeIndex].options.push('')
       setVariantsConfig(updatedConfig)
+
+      // Focus vào input mới tạo sau khi render
+      setTimeout(() => {
+        const newOptionIndex = updatedConfig[attributeIndex].options.length - 1
+        const refKey = `input-${attributeIndex}-${newOptionIndex}`
+        inputRefs.current[refKey]?.focus()
+      }, 0)
     }
   }
 
@@ -78,6 +89,29 @@ export default function VariantsConfig({
     const updatedConfig = [...variantsConfig]
     updatedConfig[attributeIndex].options.splice(optionIndex, 1)
     setVariantsConfig(updatedConfig)
+  }
+
+  // Xử lý sự kiện nhấn phím
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, attributeIndex: number, optionIndex: number) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+
+      // Kiểm tra giá trị hiện tại có trống không
+      const currentValue = variantsConfig[attributeIndex].options[optionIndex].trim()
+      if (currentValue === '') return
+
+      // Kiểm tra nếu đây là giá trị cuối cùng trong danh sách
+      const isLastOption = optionIndex === variantsConfig[attributeIndex].options.length - 1
+
+      // Nếu là giá trị cuối và không trống, thêm option mới
+      if (isLastOption) {
+        handleAddOption(attributeIndex)
+      } else {
+        // Nếu không phải giá trị cuối, focus vào option tiếp theo
+        const nextRefKey = `input-${attributeIndex}-${optionIndex + 1}`
+        inputRefs.current[nextRefKey]?.focus()
+      }
+    }
   }
 
   // Hàm để reset về variant mặc định
@@ -197,10 +231,17 @@ export default function VariantsConfig({
                             className={`flex-1 h-8 text-sm ${attribute.type.toLowerCase() === 'default' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                             value={option}
                             onChange={(e) => handleUpdateOption(attributeIndex, optionIndex, e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, attributeIndex, optionIndex)}
                             readOnly={attribute.type.toLowerCase() === 'default'}
+                            ref={(el) => {
+                              if (el) {
+                                const refKey = `input-${attributeIndex}-${optionIndex}`
+                                inputRefs.current[refKey] = el
+                              }
+                            }}
                           />
                           {/* Hiển thị nút xóa giá trị khi không phải variant default và có nhiều hơn 1 giá trị */}
-                          {attribute.type.toLowerCase() !== 'default' && attribute.options.length > 1 && (
+                          {attribute.type.toLowerCase() !== 'default' && attribute.options.length > 0 && (
                             <Button
                               type='button'
                               variant='ghost'
