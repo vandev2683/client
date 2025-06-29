@@ -1,0 +1,226 @@
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent } from '@/components/ui/card'
+import { Plus, Trash2, GripVertical, RefreshCcw } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import type { ProductVariantsType } from '@/schemaValidations/product.schema'
+
+export default function VariantsConfig({
+  variantsConfig,
+  setVariantsConfig
+}: {
+  variantsConfig: ProductVariantsType
+  setVariantsConfig: (configs: ProductVariantsType) => void
+}) {
+  // Thêm thuộc tính mới
+  const handleAddAttribute = () => {
+    const newAttribute = {
+      type: '',
+      options: ['']
+    }
+
+    // Kiểm tra xem có variant default không
+    const hasDefaultVariant = variantsConfig.some(
+      (variant) => variant.type === 'default' || variant.type.toLowerCase() === 'default'
+    )
+
+    if (hasDefaultVariant) {
+      // Nếu có variant default, loại bỏ nó và thêm thuộc tính mới
+      const filteredConfig = variantsConfig.filter(
+        (variant) => variant.type !== 'default' && variant.type.toLowerCase() !== 'default'
+      )
+      setVariantsConfig([...filteredConfig, newAttribute])
+    } else {
+      // Nếu không có variant default, chỉ thêm thuộc tính mới
+      setVariantsConfig([...variantsConfig, newAttribute])
+    }
+  }
+
+  // Xóa thuộc tính
+  const handleRemoveAttribute = (index: number) => {
+    const updatedConfig = [...variantsConfig]
+    updatedConfig.splice(index, 1)
+    setVariantsConfig(updatedConfig)
+  }
+
+  // Cập nhật tên thuộc tính
+  const handleUpdateType = (index: number, value: string) => {
+    const updatedConfig = [...variantsConfig]
+    updatedConfig[index].type = value
+    setVariantsConfig(updatedConfig)
+  }
+
+  // Thêm giá trị thuộc tính
+  const handleAddOption = (attributeIndex: number) => {
+    // Kiểm tra tất cả các options hiện tại có giá trị không trống
+    const currentOptions = variantsConfig[attributeIndex].options
+    const hasEmptyOption = currentOptions.some((option) => option.trim() === '')
+
+    // Chỉ thêm option mới khi không có option nào trống
+    if (!hasEmptyOption) {
+      const updatedConfig = [...variantsConfig]
+      updatedConfig[attributeIndex].options.push('')
+      setVariantsConfig(updatedConfig)
+    }
+  }
+
+  // Cập nhật giá trị thuộc tính
+  const handleUpdateOption = (attributeIndex: number, optionIndex: number, value: string) => {
+    const updatedConfig = [...variantsConfig]
+    updatedConfig[attributeIndex].options[optionIndex] = value
+    setVariantsConfig(updatedConfig)
+  }
+
+  // Xóa giá trị thuộc tính
+  const handleRemoveOption = (attributeIndex: number, optionIndex: number) => {
+    const updatedConfig = [...variantsConfig]
+    updatedConfig[attributeIndex].options.splice(optionIndex, 1)
+    setVariantsConfig(updatedConfig)
+  }
+
+  // Hàm để reset về variant mặc định
+  const handleResetToDefault = () => {
+    // Tạo variant mặc định
+    const defaultVariant = {
+      type: 'default',
+      options: ['default']
+    }
+    // Set lại variantsConfig chỉ với variant mặc định
+    setVariantsConfig([defaultVariant])
+  }
+
+  return (
+    <div className='space-y-4'>
+      <div className='flex items-center justify-between mb-2'>
+        <Label className='text-base font-medium'>Cấu hình biến thể</Label>
+        <div className='flex items-center gap-2'>
+          {variantsConfig[0].type.toLowerCase() !== 'default' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    className='flex items-center gap-2 cursor-pointer'
+                    onClick={handleResetToDefault}
+                  >
+                    <RefreshCcw />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Default. Xóa các thuộc tính hiện có</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            className='flex items-center gap-2 cursor-pointer'
+            onClick={handleAddAttribute}
+          >
+            <Plus className='w-4 h-4' />
+            Thêm thuộc tính
+          </Button>
+        </div>
+      </div>
+
+      <div className='border rounded-md'>
+        <ScrollArea className='max-h-[500px] pr-4 overflow-y-auto'>
+          <div className='space-y-4 p-4'>
+            {variantsConfig.map((attribute, attributeIndex) => (
+              <Card key={attributeIndex} className='border border-gray-200'>
+                <CardContent className='px-4'>
+                  <div className='space-y-3'>
+                    {/* Tên thuộc tính */}
+                    <div className='flex items-center gap-2'>
+                      <Input
+                        placeholder='Tên thuộc tính (VD: Màu sắc, Kích thước...)'
+                        className={`flex-1 ${attribute.type.toLowerCase() === 'default' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                        value={attribute.type}
+                        onChange={(e) => handleUpdateType(attributeIndex, e.target.value)}
+                        readOnly={attribute.type.toLowerCase() === 'default'}
+                      />
+                      {variantsConfig.length > 1 && (
+                        <Button
+                          type='button'
+                          variant='ghost'
+                          size='sm'
+                          onClick={() => handleRemoveAttribute(attributeIndex)}
+                          className='text-red-500 hover:text-red-700 hover:bg-red-50'
+                        >
+                          <Trash2 className='w-4 h-4' />
+                        </Button>
+                      )}
+                    </div>
+
+                    {/* Giá trị thuộc tính */}
+                    <div className='space-y-2'>
+                      <div className='flex items-center justify-between'>
+                        <Label className='text-xs text-gray-600'>Giá trị thuộc tính</Label>
+                        {/* Chỉ hiển thị nút "Thêm giá trị" khi không phải là variant default */}
+                        {attribute.type.toLowerCase() !== 'default' && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type='button'
+                                  variant='ghost'
+                                  size='sm'
+                                  onClick={() => handleAddOption(attributeIndex)}
+                                  className='text-xs cursor-pointer'
+                                  disabled={attribute.options.some((option) => option.trim() === '')}
+                                >
+                                  <Plus className='w-3 h-3 mr-1' />
+                                  Thêm giá trị
+                                </Button>
+                              </TooltipTrigger>
+                              {attribute.options.some((option) => option.trim() === '') && (
+                                <TooltipContent>
+                                  <p>Vui lòng điền đầy đủ các giá trị hiện có trước khi thêm mới</p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+
+                      {attribute.options.map((option, optionIndex) => (
+                        <div key={optionIndex} className='flex items-center gap-2'>
+                          <GripVertical className='w-3 h-3 text-gray-400' />
+                          <Input
+                            placeholder='Nhập giá trị...'
+                            className={`flex-1 h-8 text-sm ${attribute.type.toLowerCase() === 'default' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            value={option}
+                            onChange={(e) => handleUpdateOption(attributeIndex, optionIndex, e.target.value)}
+                            readOnly={attribute.type.toLowerCase() === 'default'}
+                          />
+                          {/* Hiển thị nút xóa giá trị khi không phải variant default và có nhiều hơn 1 giá trị */}
+                          {attribute.type.toLowerCase() !== 'default' && attribute.options.length > 1 && (
+                            <Button
+                              type='button'
+                              variant='ghost'
+                              size='sm'
+                              onClick={() => handleRemoveOption(attributeIndex, optionIndex)}
+                              className='h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50'
+                            >
+                              <Trash2 className='w-3 h-3' />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </ScrollArea>
+      </div>
+    </div>
+  )
+}

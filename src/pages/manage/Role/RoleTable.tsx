@@ -1,0 +1,342 @@
+import { createContext, useContext, useEffect, useState } from 'react'
+import {
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type ColumnDef,
+  type ColumnFiltersState,
+  type SortingState,
+  type VisibilityState
+} from '@tanstack/react-table'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
+import { DotsHorizontalIcon } from '@radix-ui/react-icons'
+import { useQuery } from '@/hooks/useQuery'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
+import { Input } from '@/components/ui/input'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import AutoPagination from '@/components/AutoPagination'
+import { useNavigate } from 'react-router'
+import { toast } from 'sonner'
+import { cn, formatDateTimeToLocaleString, handleError, formatCurrency } from '@/lib/utils'
+import AddCoupon from './AddRole'
+import type { CouponType } from '@/schemaValidations/coupon.schema'
+import { useAllCouponsQuery, useDeleteCouponMutation, useUpdateCouponMutation } from '@/queries/useCoupon'
+import EditCoupon from './EditRole'
+import EditRole from './EditRole'
+import AddRole from './AddRole'
+import type { RoleType } from '@/schemaValidations/role.schema'
+import { useAllRolesQuery, useDeleteRoleMutation, useRoleDetailQuery, useUpdateRoleMutation } from '@/queries/useRole'
+
+const RoleContext = createContext<{
+  roleIdEdit: number | undefined
+  setRoleIdEdit: (id: number | undefined) => void
+  roleDelete: RoleType | null
+  setRoleDelete: (role: RoleType | null) => void
+}>({
+  roleIdEdit: undefined,
+  setRoleIdEdit: (id: number | undefined) => {},
+  roleDelete: null,
+  setRoleDelete: (role: RoleType | null) => {}
+})
+
+export const columns: ColumnDef<RoleType>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Name',
+    cell: ({ row }) => <div className='ml-4'>{row.getValue('name')}</div>
+  },
+
+  {
+    accessorKey: 'isActive',
+    header: 'Status',
+    cell: function ChangeStatus({ row }) {
+      const roleDetailQuery = useRoleDetailQuery(row.original.id)
+      const updateRoleMutation = useUpdateRoleMutation()
+
+      const handleChangeStatus = async () => {
+        if (updateRoleMutation.isPending || !roleDetailQuery.data) return
+        try {
+          const { name, description } = row.original
+          const status = row.getValue('isActive')
+          const newStatus = !status
+          await updateRoleMutation.mutateAsync({
+            roleId: row.original.id,
+            body: {
+              name,
+              description,
+              isActive: newStatus,
+              permissionIds: roleDetailQuery.data.data.permissions.map((permission) => permission.id)
+            }
+          })
+          toast.success(`Đã ${newStatus ? 'kích hoạt' : 'vô hiệu hóa'} vai trò ${row.getValue('name')}`)
+        } catch (error) {
+          handleError(error)
+        }
+      }
+
+      const status = row.getValue('isActive') as boolean
+      let classNameStatus =
+        'capitalize bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300'
+      if (status === false) {
+        classNameStatus =
+          'bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300'
+      }
+
+      return (
+        <span className={cn([classNameStatus, 'cursor-pointer'])} onClick={handleChangeStatus}>
+          {status ? 'active' : 'Inactive'}
+        </span>
+      )
+    }
+  },
+  {
+    accessorKey: 'description',
+    header: 'Description',
+    cell: ({ row }) => {
+      const description = row.getValue('description') as string
+      const match = description.match(/<p[^>]*>.*?<\/p>/i)
+      const briefDesc = match ? match[0] : description
+      return <div dangerouslySetInnerHTML={{ __html: briefDesc }} className='whitespace-pre-line' />
+    }
+  },
+  {
+    id: 'actions',
+    enableHiding: false,
+    cell: function Actions({ row }) {
+      const { setRoleIdEdit, setRoleDelete } = useContext(RoleContext)
+      const openRoleEdit = () => {
+        setTimeout(() => {
+          setRoleIdEdit(row.original.id)
+        }, 0)
+      }
+      const openRoleDelete = () => {
+        setTimeout(() => {
+          setRoleDelete(row.original)
+        }, 0)
+      }
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant='ghost' className='h-8 w-8 p-0'>
+              <span className='sr-only'>Open menu</span>
+              <DotsHorizontalIcon className='h-4 w-4' />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end'>
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={openRoleEdit}>Sửa</DropdownMenuItem>
+            <DropdownMenuItem onClick={openRoleDelete}>Xóa</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    }
+  },
+  {
+    id: 'search',
+    cell: () => null,
+    enableHiding: true,
+    filterFn: (row, columnId, value) => {
+      const name = (row.original.name ?? '').toLowerCase()
+      const description = (row.original.description ?? '').toString()
+      const query = value.toLowerCase()
+      return name.includes(query) || description.includes(query)
+    },
+    enableColumnFilter: true
+  }
+]
+
+function AlertDialogTagDelete({
+  roleDelete,
+  setRoleDelete
+}: {
+  roleDelete: RoleType | null
+  setRoleDelete: (value: RoleType | null) => void
+}) {
+  const deleteRoleMutation = useDeleteRoleMutation()
+
+  const handleDelete = async () => {
+    if (deleteRoleMutation.isPending) return
+    try {
+      if (roleDelete?.id) {
+        await deleteRoleMutation.mutateAsync(roleDelete.id)
+        setRoleDelete(null)
+        toast.success('Xóa vai trò thành công')
+      }
+    } catch (error) {
+      handleError(error)
+    }
+  }
+  return (
+    <AlertDialog
+      open={Boolean(roleDelete)}
+      onOpenChange={(value) => {
+        if (!value) {
+          setRoleDelete(null)
+        }
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Xóa vai trò?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Vai trò{' '}
+            <span className='bg-red-100 text-red-800 text-sm font-medium px-2.5 py-0.5 rounded-sm dark:bg-red-900 dark:text-red-300'>
+              {roleDelete?.name}
+            </span>{' '}
+            sẽ bị xóa vĩnh viễn
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Hủy</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete}>Xóa</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+const PAGE_SIZE = 10
+export default function RoleTable() {
+  const navigate = useNavigate()
+
+  const query = useQuery()
+  const page = query.get('page') ? Number(query.get('page')) : 1
+
+  const [roleIdEdit, setRoleIdEdit] = useState<number | undefined>()
+  const [roleDelete, setRoleDelete] = useState<RoleType | null>(null)
+
+  const rolesQuery = useAllRolesQuery()
+  const data = rolesQuery.data?.data.data || []
+
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = useState({})
+  const pageIndex = page - 1
+  const [pagination, setPagination] = useState({
+    pageIndex,
+    pageSize: PAGE_SIZE
+  })
+
+  const table = useReactTable({
+    data,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
+    autoResetPageIndex: false,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+      pagination
+    }
+  })
+
+  useEffect(() => {
+    table.setPagination({
+      pageIndex,
+      pageSize: PAGE_SIZE
+    })
+  }, [table, pageIndex])
+
+  return (
+    <RoleContext.Provider value={{ roleIdEdit, setRoleIdEdit, roleDelete, setRoleDelete }}>
+      <div className='w-full'>
+        <EditRole id={roleIdEdit} setId={setRoleIdEdit} />
+        <AlertDialogTagDelete roleDelete={roleDelete} setRoleDelete={setRoleDelete} />
+        <div className='flex items-center py-4'>
+          <Input
+            placeholder='Lọc tên vai trò...'
+            value={(table.getColumn('search')?.getFilterValue() as string) ?? ''}
+            onChange={(event) => {
+              table.getColumn('search')?.setFilterValue(event.target.value)
+              table.setPageIndex(0)
+              navigate(`/manage/roles`)
+            }}
+            className='max-w-sm'
+          />
+          <div className='ml-auto flex items-center gap-2'>
+            <AddRole />
+          </div>
+        </div>
+        <div className='rounded-md border'>
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id} className={header.id === 'name' ? 'pl-6' : ''}>
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    )
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className='h-24 text-center'>
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <div className='flex items-center justify-end space-x-2 py-4'>
+          <div className='text-xs text-muted-foreground py-4 flex-1 '>
+            Hiển thị <strong>{table.getPaginationRowModel().rows.length}</strong> trong <strong>{data.length}</strong>{' '}
+            kết quả
+          </div>
+          <div>
+            <AutoPagination
+              page={table.getState().pagination.pageIndex + 1}
+              pageSize={table.getPageCount()}
+              pathname='/manage/roles'
+            />
+          </div>
+        </div>
+      </div>
+    </RoleContext.Provider>
+  )
+}
