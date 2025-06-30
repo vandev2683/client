@@ -42,7 +42,12 @@ import { cn, handleError } from '@/lib/utils'
 import EditTable from './EditTable'
 import AddTable from './AddTable'
 import type { TableType } from '@/schemaValidations/table.schema'
-import { useAllTablesQuery, useDeleteTableMutation, useUpdateTableMutation } from '@/queries/useTable'
+import {
+  useAllTablesQuery,
+  useChangeTableStatusMutation,
+  useDeleteTableMutation,
+  useUpdateTableMutation
+} from '@/queries/useTable'
 import { TableStatusValues, type TableStatusType } from '@/constants/table'
 
 const TableContext = createContext<{
@@ -72,22 +77,19 @@ export const columns: ColumnDef<TableType>[] = [
     accessorKey: 'status',
     header: 'Status',
     cell: function ChangeStatus({ row }) {
-      const updateTableMutation = useUpdateTableMutation()
+      const changeTableStatusMutation = useChangeTableStatusMutation()
 
       const handleChangeStatus = async (value: TableStatusType) => {
-        if (updateTableMutation.isPending) return
+        if (changeTableStatusMutation.isPending) return
 
         try {
           const payload = {
             tableId: row.original.id,
             body: {
-              code: row.original.code,
-              capacity: row.original.capacity,
-              status: value,
-              location: row.original.location
+              status: value
             }
           }
-          await updateTableMutation.mutateAsync(payload)
+          await changeTableStatusMutation.mutateAsync(payload)
           toast.success('Cập nhật trạng thái bàn ăn thành công')
         } catch (error) {
           handleError(error)

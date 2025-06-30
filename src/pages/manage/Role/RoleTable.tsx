@@ -37,15 +37,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AutoPagination from '@/components/AutoPagination'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { cn, formatDateTimeToLocaleString, handleError, formatCurrency } from '@/lib/utils'
-import AddCoupon from './AddRole'
-import type { CouponType } from '@/schemaValidations/coupon.schema'
-import { useAllCouponsQuery, useDeleteCouponMutation, useUpdateCouponMutation } from '@/queries/useCoupon'
-import EditCoupon from './EditRole'
+import { cn, handleError } from '@/lib/utils'
 import EditRole from './EditRole'
 import AddRole from './AddRole'
 import type { RoleType } from '@/schemaValidations/role.schema'
-import { useAllRolesQuery, useDeleteRoleMutation, useRoleDetailQuery, useUpdateRoleMutation } from '@/queries/useRole'
+import { useAllRolesQuery, useChangeRoleStatusMutation, useDeleteRoleMutation } from '@/queries/useRole'
 
 const RoleContext = createContext<{
   roleIdEdit: number | undefined
@@ -70,24 +66,20 @@ export const columns: ColumnDef<RoleType>[] = [
     accessorKey: 'isActive',
     header: 'Status',
     cell: function ChangeStatus({ row }) {
-      const roleDetailQuery = useRoleDetailQuery(row.original.id)
-      const updateRoleMutation = useUpdateRoleMutation()
+      const changeRoleStatusMutation = useChangeRoleStatusMutation()
 
       const handleChangeStatus = async () => {
-        if (updateRoleMutation.isPending || !roleDetailQuery.data) return
+        if (changeRoleStatusMutation.isPending) return
         try {
-          const { name, description } = row.original
           const status = row.getValue('isActive')
           const newStatus = !status
-          await updateRoleMutation.mutateAsync({
+          const payload = {
             roleId: row.original.id,
             body: {
-              name,
-              description,
-              isActive: newStatus,
-              permissionIds: roleDetailQuery.data.data.permissions.map((permission) => permission.id)
+              isActive: newStatus
             }
-          })
+          }
+          await changeRoleStatusMutation.mutateAsync(payload)
           toast.success(`Đã ${newStatus ? 'kích hoạt' : 'vô hiệu hóa'} vai trò ${row.getValue('name')}`)
         } catch (error) {
           handleError(error)

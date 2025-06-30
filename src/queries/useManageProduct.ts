@@ -46,6 +46,16 @@ export const useUpdateProductMutation = () => {
   })
 }
 
+export const useChangeProductStatusMutation = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: manageProductApis.changeStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'], exact: true })
+    }
+  })
+}
+
 export const useDeleteProductMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({

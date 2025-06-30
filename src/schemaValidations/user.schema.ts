@@ -58,12 +58,13 @@ export const UpdateUserBodySchema = CreateUserBodySchema.omit({
   password: true
 }).strict()
 
-export const ChangePasswordBodySchema = z
-  .object({
-    userId: z.coerce.number().int().positive(),
-    newPassword: z.string().min(3).max(100)
-  })
-  .strict()
+export const ChangePasswordBodySchema = UserSchema.pick({
+  password: true
+}).strict()
+
+export const ChangeUserStatusBodySchema = UserSchema.pick({
+  status: true
+}).strict()
 
 export type UserType = z.infer<typeof UserSchema>
 export type UserWithRoleType = z.infer<typeof UserWithRoleSchema>
@@ -73,3 +74,4 @@ export type GetAllUsersResType = z.infer<typeof GetAllUsersResSchema>
 export type CreateUserBodyType = z.infer<typeof CreateUserBodySchema>
 export type UpdateUserBodyType = z.infer<typeof UpdateUserBodySchema>
 export type ChangePasswordBodyType = z.infer<typeof ChangePasswordBodySchema>
+export type ChangeUserStatusBodyType = z.infer<typeof ChangeUserStatusBodySchema>

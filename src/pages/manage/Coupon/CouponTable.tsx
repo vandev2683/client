@@ -40,7 +40,12 @@ import { toast } from 'sonner'
 import { cn, formatDateTimeToLocaleString, handleError, formatCurrency } from '@/lib/utils'
 import AddCoupon from './AddCoupon'
 import type { CouponType } from '@/schemaValidations/coupon.schema'
-import { useAllCouponsQuery, useDeleteCouponMutation, useUpdateCouponMutation } from '@/queries/useCoupon'
+import {
+  useAllCouponsQuery,
+  useChangeCouponStatusMutation,
+  useDeleteCouponMutation,
+  useUpdateCouponMutation
+} from '@/queries/useCoupon'
 import EditCoupon from './EditCoupon'
 
 const CouponContext = createContext<{
@@ -80,23 +85,16 @@ export const columns: ColumnDef<CouponType>[] = [
     accessorKey: 'isActive',
     header: 'Status',
     cell: function ChangeStatus({ row }) {
-      const updateCouponMutation = useUpdateCouponMutation()
+      const changeCouponStatusMutation = useChangeCouponStatusMutation()
 
       const handleChangeStatus = async () => {
-        if (updateCouponMutation.isPending) return
+        if (changeCouponStatusMutation.isPending) return
         try {
-          const { code, description, discountValue, expiresAt, minOrderAmount, usageLimit } = row.original
           const status = row.getValue('isActive')
           const newStatus = !status
-          await updateCouponMutation.mutateAsync({
+          await changeCouponStatusMutation.mutateAsync({
             couponId: row.original.id,
             body: {
-              code,
-              description,
-              discountValue,
-              expiresAt,
-              minOrderAmount,
-              usageLimit,
               isActive: newStatus
             }
           })

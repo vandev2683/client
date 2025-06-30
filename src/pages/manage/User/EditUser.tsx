@@ -317,8 +317,8 @@ export default function EditUser({
                       <Label htmlFor='roleId'>Vai trò</Label>
                       <div className='col-span-3 w-full space-y-2'>
                         <Select
-                          onValueChange={() => {
-                            field.onChange(Number(field.value))
+                          onValueChange={(val) => {
+                            field.onChange(Number(val))
                           }}
                           defaultValue={field.value.toString()}
                           value={form.getValues('roleId').toString()}

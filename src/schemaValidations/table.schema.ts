@@ -44,6 +44,10 @@ export const CreateTableBodySchema = TableSchema.pick({
 
 export const UpdateTableBodySchema = CreateTableBodySchema
 
+export const ChangeTableStatusBodySchema = TableSchema.pick({
+  status: true
+}).strict()
+
 export type TableType = z.infer<typeof TableSchema>
 export type TableParamsType = z.infer<typeof TableParamsSchema>
 export type GetTablesResType = z.infer<typeof GetTablesResSchema>
@@ -51,3 +55,4 @@ export type GetAllTablesResType = z.infer<typeof GetAllTablesResSchema>
 export type GetTableDetailResType = z.infer<typeof GetTableDetailResSchema>
 export type CreateTableBodyType = z.infer<typeof CreateTableBodySchema>
 export type UpdateTableBodyType = z.infer<typeof UpdateTableBodySchema>
+export type ChangeTableStatusBodyType = z.infer<typeof ChangeTableStatusBodySchema>

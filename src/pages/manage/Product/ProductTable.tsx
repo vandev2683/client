@@ -1,4 +1,4 @@
-import type { TagType } from '@/schemaValidations/tag.schema'
+import type { ProductType } from '@/schemaValidations/product.schema'
 import { createContext, useContext, useEffect, useState } from 'react'
 import {
   flexRender,
@@ -37,62 +37,134 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import AutoPagination from '@/components/AutoPagination'
 import { useNavigate } from 'react-router'
-import AddTag from './AddProduct'
-import EditTag from './EditProduct'
-import { useAllTagsQuery, useDeleteTagMutation } from '@/queries/useTag'
 import { toast } from 'sonner'
-import { handleError } from '@/lib/utils'
-import EditUser from './EditProduct'
-import AddUser from './AddProduct'
-import EditProduct from './EditProduct'
+import { cn, formatCurrency, handleError } from '@/lib/utils'
 import AddProduct from './AddProduct'
+import { ProductStatusValues, type ProductStatusType } from '@/constants/product'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import {
+  useAllProductsQuery,
+  useChangeProductStatusMutation,
+  useDeleteProductMutation,
+  useUpdateProductMutation
+} from '@/queries/useManageProduct'
+import Config from '@/constants/config'
+import EditProduct from './EditProduct'
 
-const TagContext = createContext<{
-  tagIdEdit: number | undefined
-  setTagIdEdit: (id: number | undefined) => void
-  tagDelete: TagType | null
-  setTagDelete: (tag: TagType | null) => void
+const ProductContext = createContext<{
+  productIdEdit: number | undefined
+  setProductIdEdit: (id: number | undefined) => void
+  productDelete: ProductType | null
+  setProductDelete: (product: ProductType | null) => void
 }>({
-  tagIdEdit: undefined,
-  setTagIdEdit: (id: number | undefined) => {},
-  tagDelete: null,
-  setTagDelete: (tag: TagType | null) => {}
+  productIdEdit: undefined,
+  setProductIdEdit: (id: number | undefined) => {},
+  productDelete: null,
+  setProductDelete: (product: ProductType | null) => {}
 })
 
-export const columns: ColumnDef<TagType>[] = [
+export const columns: ColumnDef<ProductType>[] = [
+  {
+    accessorKey: 'images',
+    header: 'Thumbnail',
+    cell: ({ row }) => {
+      const images = row.getValue('images') as string[]
+      if (!images || images.length === 0) {
+        return (
+          <img
+            src={Config.ImageBaseUrl}
+            alt={row.getValue('name') as string}
+            className='w-24 h-24 object-cover rounded-md ml-4'
+          />
+        )
+      }
+      return (
+        <img src={images[0]} alt={row.getValue('name') as string} className='w-24 h-24 object-cover rounded-md ml-4' />
+      )
+    }
+  },
   {
     accessorKey: 'name',
     header: 'Name',
-    cell: ({ row }) => <div className='capitalize ml-4'>{row.getValue('name')}</div>
+    cell: ({ row }) => <div className='capitalize'>{row.getValue('name')}</div>
   },
   {
-    accessorKey: 'type',
-    header: 'Type',
-    cell: ({ row }) => <div className='capitalize'>{row.getValue('type')}</div>
+    accessorKey: 'basePrice',
+    header: 'Price',
+    cell: ({ row }) => <div>{formatCurrency(row.getValue('basePrice') as number)}</div>
   },
   {
-    accessorKey: 'description',
-    header: 'Description',
-    cell: ({ row }) => {
-      const description = row.getValue('description') as string
-      const match = description.match(/<p[^>]*>.*?<\/p>/i)
-      const briefDesc = match ? match[0] : description
-      return <div dangerouslySetInnerHTML={{ __html: briefDesc }} className='whitespace-pre-line' />
+    accessorKey: 'status',
+    header: 'Status',
+    cell: function ChangeStatus({ row }) {
+      const changeProductStatusMutation = useChangeProductStatusMutation()
+
+      const handleChangeStatus = async (value: ProductStatusType) => {
+        if (changeProductStatusMutation.isPending) return
+
+        try {
+          const payload = {
+            productId: row.original.id,
+            body: {
+              status: value
+            }
+          }
+          await changeProductStatusMutation.mutateAsync(payload)
+          toast.success('Cập nhật trạng thái sản phẩm thành công')
+        } catch (error) {
+          handleError(error)
+        }
+      }
+
+      const status = row.getValue('status') as ProductStatusType
+      let classNameStatus =
+        'capitalize bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300'
+      if (status === 'OutOfStock') {
+        classNameStatus =
+          'bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300'
+      } else if (status === 'Pending') {
+        classNameStatus =
+          'bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-300'
+      } else if (status === 'Hidden') {
+        classNameStatus =
+          'bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300'
+      }
+
+      return (
+        <>
+          <Select onValueChange={handleChangeStatus} defaultValue={status}>
+            <SelectTrigger
+              className='w-0 p-0 h-0 border-none shadow-none hover:shadow-none focus:shadow-none'
+              hasIcon={false}
+            >
+              <span className={cn([classNameStatus, 'cursor-pointer'])}>{row.getValue('status')}</span>
+            </SelectTrigger>
+
+            <SelectContent>
+              {ProductStatusValues.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </>
+      )
     }
   },
   {
     id: 'actions',
     enableHiding: false,
     cell: function Actions({ row }) {
-      const { setTagIdEdit, setTagDelete } = useContext(TagContext)
-      const openTagEdit = () => {
+      const { setProductIdEdit, setProductDelete } = useContext(ProductContext)
+      const openProductEdit = () => {
         setTimeout(() => {
-          setTagIdEdit(row.original.id)
+          setProductIdEdit(row.original.id)
         }, 0)
       }
-      const openTagDelete = () => {
+      const openProductDelete = () => {
         setTimeout(() => {
-          setTagDelete(row.original)
+          setProductDelete(row.original)
         }, 0)
       }
 
@@ -107,31 +179,43 @@ export const columns: ColumnDef<TagType>[] = [
           <DropdownMenuContent align='end'>
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={openTagEdit}>Sửa</DropdownMenuItem>
-            <DropdownMenuItem onClick={openTagDelete}>Xóa</DropdownMenuItem>
+            <DropdownMenuItem onClick={openProductEdit}>Sửa</DropdownMenuItem>
+            <DropdownMenuItem onClick={openProductDelete}>Xóa</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
     }
+  },
+  {
+    id: 'search',
+    cell: () => null,
+    enableHiding: true,
+    filterFn: (row, columnId, value) => {
+      const name = (row.original.name || '').toLowerCase()
+      const description = (row.original.description || '').toLowerCase()
+      const query = value.toLowerCase()
+      return name.includes(query) || description.includes(query)
+    },
+    enableColumnFilter: true
   }
 ]
 
-function AlertDialogTagDelete({
-  tagDelete,
-  setTagDelete
+function AlertDialogproductDelete({
+  productDelete,
+  setProductDelete
 }: {
-  tagDelete: TagType | null
-  setTagDelete: (value: TagType | null) => void
+  productDelete: ProductType | null
+  setProductDelete: (value: ProductType | null) => void
 }) {
-  const deleteTagMutation = useDeleteTagMutation()
+  const deleteProductMutation = useDeleteProductMutation()
 
   const handleDelete = async () => {
-    if (deleteTagMutation.isPending) return
+    if (deleteProductMutation.isPending) return
     try {
-      if (tagDelete?.id) {
-        await deleteTagMutation.mutateAsync(tagDelete.id)
-        setTagDelete(null)
-        toast.success('Xóa thẻ thành công')
+      if (productDelete?.id) {
+        await deleteProductMutation.mutateAsync(productDelete.id)
+        setProductDelete(null)
+        toast.success('Xóa sản phẩm thành công')
       }
     } catch (error) {
       handleError(error)
@@ -139,19 +223,19 @@ function AlertDialogTagDelete({
   }
   return (
     <AlertDialog
-      open={Boolean(tagDelete)}
+      open={Boolean(productDelete)}
       onOpenChange={(value) => {
         if (!value) {
-          setTagDelete(null)
+          setProductDelete(null)
         }
       }}
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Xóa thẻ?</AlertDialogTitle>
+          <AlertDialogTitle>Xóa sản phẩm?</AlertDialogTitle>
           <AlertDialogDescription>
-            Thẻ <span className='bg-foreground text-primary-foreground rounded px-1'>{tagDelete?.name}</span> sẽ bị xóa
-            vĩnh viễn
+            Sản phẩm <span className='bg-foreground text-primary-foreground rounded px-1'>{productDelete?.name}</span>
+            sẽ bị xóa vĩnh viễn
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -170,11 +254,11 @@ export default function ProductTable() {
   const query = useQuery()
   const page = query.get('page') ? Number(query.get('page')) : 1
 
-  const [tagIdEdit, setTagIdEdit] = useState<number | undefined>()
-  const [tagDelete, setTagDelete] = useState<TagType | null>(null)
+  const [productIdEdit, setProductIdEdit] = useState<number | undefined>()
+  const [productDelete, setProductDelete] = useState<ProductType | null>(null)
 
-  const tagsQuery = useAllTagsQuery()
-  const data = tagsQuery.data?.data.data || []
+  const productsQuery = useAllProductsQuery()
+  const data = productsQuery.data?.data.data || []
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -216,18 +300,18 @@ export default function ProductTable() {
   }, [table, pageIndex])
 
   return (
-    <TagContext.Provider value={{ tagIdEdit, setTagIdEdit, tagDelete, setTagDelete }}>
+    <ProductContext.Provider value={{ productIdEdit, setProductIdEdit, productDelete, setProductDelete }}>
       <div className='w-full'>
-        {/* <EditProduct id={tagIdEdit} setId={setTagIdEdit} /> */}
-        <AlertDialogTagDelete tagDelete={tagDelete} setTagDelete={setTagDelete} />
+        <EditProduct id={productIdEdit} setId={setProductIdEdit} />
+        <AlertDialogproductDelete productDelete={productDelete} setProductDelete={setProductDelete} />
         <div className='flex items-center py-4'>
           <Input
-            placeholder='Lọc tên thẻ...'
-            value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
+            placeholder='Lọc tên, mô tả...'
+            value={(table.getColumn('search')?.getFilterValue() as string) ?? ''}
             onChange={(event) => {
-              table.getColumn('name')?.setFilterValue(event.target.value)
+              table.getColumn('search')?.setFilterValue(event.target.value)
               table.setPageIndex(0)
-              navigate(`/manage/tags?page=1`)
+              navigate(`/manage/products`)
             }}
             className='max-w-sm'
           />
@@ -242,7 +326,7 @@ export default function ProductTable() {
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id} className={header.id === 'name' ? 'pl-6' : ''}>
+                      <TableHead key={header.id} className={header.id === 'images' ? 'pl-6' : ''}>
                         {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     )
@@ -278,11 +362,11 @@ export default function ProductTable() {
             <AutoPagination
               page={table.getState().pagination.pageIndex + 1}
               pageSize={table.getPageCount()}
-              pathname='/manage/tags'
+              pathname='/manage/products'
             />
           </div>
         </div>
       </div>
-    </TagContext.Provider>
+    </ProductContext.Provider>
   )
 }

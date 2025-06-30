@@ -2,6 +2,7 @@ import http from '@/lib/http'
 import type { PaginationQueryType } from '@/schemaValidations/request.schema'
 import type { MessageResType } from '@/schemaValidations/response.schema'
 import type {
+  ChangeTableStatusBodyType,
   CreateTableBodyType,
   GetAllTablesResType,
   GetTableDetailResType,
@@ -34,6 +35,11 @@ const tableApis = {
   update(payload: { tableId: number; body: UpdateTableBodyType }) {
     const { tableId, body } = payload
     return http.put<TableType>(`${BASE_URL}/${tableId}`, body)
+  },
+
+  changeStatus(payload: { tableId: number; body: ChangeTableStatusBodyType }) {
+    const { tableId, body } = payload
+    return http.patch<MessageResType>(`${BASE_URL}/${tableId}/change-status`, body)
   },
 
   delete(tableId: number) {

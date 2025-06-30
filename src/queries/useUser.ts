@@ -56,6 +56,16 @@ export const useChangePasswordMutation = () => {
   })
 }
 
+export const useChangeUserStatusMutation = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: userApis.changeStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'], exact: true })
+    }
+  })
+}
+
 export const useDeleteUserMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({

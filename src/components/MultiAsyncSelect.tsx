@@ -132,6 +132,12 @@ export const MultiAsyncSelect = React.forwardRef<HTMLButtonElement, Props>(
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false)
     const optionsRef = useRef<Record<string, Option>>({})
 
+    useEffect(() => {
+      if (defaultValue.length > 0) {
+        setSelectedValues(defaultValue)
+      }
+    }, [defaultValue])
+
     const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
       // 如果按下的是回车键，则保持弹窗打开
       if (event.key === 'Enter') {
@@ -221,7 +227,7 @@ export const MultiAsyncSelect = React.forwardRef<HTMLButtonElement, Props>(
           >
             {selectedValues.length > 0 ? (
               <div className='flex justify-between items-center w-full'>
-                <div className='flex flex-nowrap items-center gap-1 overflow-x-auto'>
+                <div className='flex flex-nowrap items-center gap-1'>
                   {selectedValues.slice(0, maxCount).map((value) => {
                     let option: Option | undefined
                     if (async) {
@@ -233,7 +239,7 @@ export const MultiAsyncSelect = React.forwardRef<HTMLButtonElement, Props>(
                       <Badge key={value}>
                         <span>{option?.label}</span>
                         <div
-                          className='ml-2 size-4 cursor-pointer'
+                          className='ml-1 size-4 cursor-pointer'
                           onClick={(event) => {
                             event.stopPropagation()
                             toggleOption(value)

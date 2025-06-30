@@ -46,6 +46,16 @@ export const useUpdateCouponMutation = () => {
   })
 }
 
+export const useChangeCouponStatusMutation = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: couponApis.changeStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coupons'], exact: true })
+    }
+  })
+}
+
 export const useDeleteCouponMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({

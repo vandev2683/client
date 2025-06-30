@@ -2,6 +2,7 @@ import http from '@/lib/http'
 import type { PaginationQueryType } from '@/schemaValidations/request.schema'
 import type { MessageResType } from '@/schemaValidations/response.schema'
 import type {
+  ChangeRoleStatusBodyType,
   CreateRoleBodyType,
   GetAllRolesResType,
   GetRoleDetailResType,
@@ -34,6 +35,11 @@ const roleApis = {
   update(payload: { roleId: number; body: UpdateRoleBodyType }) {
     const { roleId, body } = payload
     return http.put<RoleType>(`${BASE_URL}/${roleId}`, body)
+  },
+
+  changeStatus(payload: { roleId: number; body: ChangeRoleStatusBodyType }) {
+    const { roleId, body } = payload
+    return http.patch<MessageResType>(`${BASE_URL}/${roleId}/change-status`, body)
   },
 
   delete(roleId: number) {

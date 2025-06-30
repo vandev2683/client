@@ -1,5 +1,6 @@
 import http from '@/lib/http'
 import type {
+  ChangeProductStatusBodyType,
   CreateProductBodyType,
   GetAllProductsResType,
   GetProductDetailResType,
@@ -8,6 +9,7 @@ import type {
   ProductType,
   UpdateProductBodyType
 } from '@/schemaValidations/product.schema'
+import type { MessageResType } from '@/schemaValidations/response.schema'
 
 const BASE_URL = '/manage-products'
 
@@ -35,8 +37,13 @@ const manageProductApis = {
     return http.put<ProductType>(`${BASE_URL}/${productId}`, body)
   },
 
+  changeStatus(payload: { productId: number; body: ChangeProductStatusBodyType }) {
+    const { productId, body } = payload
+    return http.patch<MessageResType>(`${BASE_URL}/${productId}/change-status`, body)
+  },
+
   delete(productId: number) {
-    return http.delete(`${BASE_URL}/${productId}`)
+    return http.delete<MessageResType>(`${BASE_URL}/${productId}`)
   }
 }
 

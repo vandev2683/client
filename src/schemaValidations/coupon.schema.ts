@@ -42,9 +42,14 @@ export const CreateCouponBodySchema = CouponSchema.pick({
 
 export const UpdateCouponBodySchema = CreateCouponBodySchema
 
+export const ChangeCouponStatusBodySchema = CouponSchema.pick({
+  isActive: true
+}).strict()
+
 export type CouponType = z.infer<typeof CouponSchema>
 export type CouponParamsType = z.infer<typeof CouponParamsSchema>
 export type GetCouponsResType = z.infer<typeof GetCouponsResSchema>
 export type GetAllCouponsResType = z.infer<typeof GetAllCouponsResSchema>
 export type CreateCouponBodyType = z.infer<typeof CreateCouponBodySchema>
 export type UpdateCouponBodyType = z.infer<typeof UpdateCouponBodySchema>
+export type ChangeCouponStatusBodyType = z.infer<typeof ChangeCouponStatusBodySchema>

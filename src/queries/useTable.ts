@@ -46,6 +46,16 @@ export const useUpdateTableMutation = () => {
   })
 }
 
+export const useChangeTableStatusMutation = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: tableApis.changeStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'], exact: true })
+    }
+  })
+}
+
 export const useDeleteTableMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({

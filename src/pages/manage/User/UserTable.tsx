@@ -41,7 +41,12 @@ import { cn, handleError } from '@/lib/utils'
 import EditUser from './EditUser'
 import AddUser from './AddUser'
 import type { UserType, UserWithRoleType } from '@/schemaValidations/user.schema'
-import { useAllUsersQuery, useDeleteUserMutation, useUpdateUserMutation } from '@/queries/useUser'
+import {
+  useAllUsersQuery,
+  useChangeUserStatusMutation,
+  useDeleteUserMutation,
+  useUpdateUserMutation
+} from '@/queries/useUser'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { UserStatusValues, type UserStatusType } from '@/constants/user'
 import ChangePassword from './ChangePassword'
@@ -85,24 +90,19 @@ export const columns: ColumnDef<UserWithRoleType>[] = [
     accessorKey: 'status',
     header: 'Status',
     cell: function ChangeStatus({ row }) {
-      const updateUserMutation = useUpdateUserMutation()
+      const changeUserStatusMutation = useChangeUserStatusMutation()
 
       const handleChangeStatus = async (value: UserStatusType) => {
-        if (updateUserMutation.isPending) return
+        if (changeUserStatusMutation.isPending) return
 
         try {
           const payload = {
             userId: row.original.id,
             body: {
-              name: row.original.name,
-              roleId: row.original.roleId,
-              phoneNumber: row.original.phoneNumber,
-              avatar: row.original.avatar,
-              dateOfBirth: row.original.dateOfBirth,
               status: value
             }
           }
-          await updateUserMutation.mutateAsync(payload)
+          await changeUserStatusMutation.mutateAsync(payload)
           toast.success('Cập nhật trạng thái người dùng thành công')
         } catch (error) {
           handleError(error)

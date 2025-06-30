@@ -16,12 +16,12 @@ import ImageUpload from '@/components/ImageUpload'
 import { CreateProductBodySchema, type CreateProductBodyType } from '@/schemaValidations/product.schema'
 import { useAllCategoriesQuery } from '@/queries/useCategory'
 import { useAllTagsQuery } from '@/queries/useTag'
-import { ProductSatusValues } from '@/constants/product'
-import { MultiAsyncSelect } from '@/components/MultiSelect'
+import { MultiAsyncSelect } from '@/components/MultiAsyncSelect'
 import TinyEditor from '@/components/TinyEditor'
 import { Separator } from '@/components/ui/separator'
 import VariantsConfig from '@/components/VariantsConfig'
 import VariantsList from '@/components/VariantsList'
+import { ProductStatusValues } from '@/constants/product'
 
 export default function AddProduct() {
   const [open, setOpen] = useState(false)
@@ -175,7 +175,7 @@ export default function AddProduct() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {ProductSatusValues.map((val) => (
+                            {ProductStatusValues.map((val) => (
                               <SelectItem key={val} value={val}>
                                 {val}
                               </SelectItem>
@@ -230,6 +230,7 @@ export default function AddProduct() {
                         <MultiAsyncSelect
                           id='tags'
                           placeholder='Chọn thẻ'
+                          maxCount={4}
                           options={filteredTags.map((category) => ({
                             label: category.name,
                             value: category.id.toString()

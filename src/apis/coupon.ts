@@ -1,5 +1,6 @@
 import http from '@/lib/http'
 import type {
+  ChangeCouponStatusBodyType,
   CouponType,
   CreateCouponBodyType,
   GetAllCouponsResType,
@@ -33,6 +34,11 @@ const couponApis = {
   update(payload: { couponId: number; body: UpdateCouponBodyType }) {
     const { couponId, body } = payload
     return http.put<CouponType>(`${BASE_URL}/${couponId}`, body)
+  },
+
+  changeStatus(payload: { couponId: number; body: ChangeCouponStatusBodyType }) {
+    const { couponId, body } = payload
+    return http.patch<MessageResType>(`${BASE_URL}/${couponId}/change-status`, body)
   },
 
   delete(couponId: number) {

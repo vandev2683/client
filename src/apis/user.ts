@@ -3,6 +3,7 @@ import type { PaginationQueryType } from '@/schemaValidations/request.schema'
 import type { MessageResType } from '@/schemaValidations/response.schema'
 import type {
   ChangePasswordBodyType,
+  ChangeUserStatusBodyType,
   CreateUserBodyType,
   GetAllUsersResType,
   GetUsersResType,
@@ -36,8 +37,14 @@ const userApis = {
     return http.put<UserType>(`${BASE_URL}/${userId}`, body)
   },
 
-  changePassword(body: ChangePasswordBodyType) {
-    return http.patch<MessageResType>(`${BASE_URL}/change-password`, body)
+  changePassword(payload: { userId: number; body: ChangePasswordBodyType }) {
+    const { userId, body } = payload
+    return http.patch<MessageResType>(`${BASE_URL}/${userId}/change-password`, body)
+  },
+
+  changeStatus(payload: { userId: number; body: ChangeUserStatusBodyType }) {
+    const { userId, body } = payload
+    return http.patch<MessageResType>(`${BASE_URL}/${userId}/change-status`, body)
   },
 
   delete(userId: number) {

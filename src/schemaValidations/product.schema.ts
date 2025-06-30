@@ -175,18 +175,23 @@ export const CreateProductBodySchema = ProductSchema.pick({
       }
     }
     const variantValues = generateVariants(variantsConfig)
+    const allVariants = [
+      ...variants,
+      ...variantValues.filter((variant) => !variants.some((v) => v.value === variant.value))
+    ]
     // Kiểm tra xem kích thước của variants có khớp với variantsConfig không
-    if (variantValues.length !== variants.length) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `The number of variants (${variants.length}) does not match. Please check again.`,
-        path: ['variants']
-      })
-    }
+    // if (allVariants.length !== variants.length) {
+    //   ctx.addIssue({
+    //     code: z.ZodIssueCode.custom,
+    //     message: `The number of variants (${variants.length}) does not match. Please check again.`,
+    //     path: ['variants']
+    //   })
+    // }
 
     // Kiểm tra xem các giá trị của variants có khớp với variantsConfig không
+
     for (let i = 0; i < variants.length; i++) {
-      const isValid = variants[i].value === variantValues[i].value || variants[i].value === 'default'
+      const isValid = variants[i].value === allVariants[i].value || variants[i].value === 'default'
       if (variants[i].value === 'default') {
         variantsConfig[0].type = 'default'
         variantsConfig[0].options = ['default']
@@ -194,7 +199,7 @@ export const CreateProductBodySchema = ProductSchema.pick({
       if (!isValid) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Variant value "${variants[i].value}" does not match the expected value "${variantValues[i].value}". Please check again.`,
+          message: `Variant value "${variants[i].value}" does not match the expected value "${allVariants[i].value}". Please check again.`,
           path: ['variants']
         })
       }
@@ -202,6 +207,10 @@ export const CreateProductBodySchema = ProductSchema.pick({
   })
 
 export const UpdateProductBodySchema = CreateProductBodySchema
+
+export const ChangeProductStatusBodySchema = ProductSchema.pick({
+  status: true
+}).strict()
 
 export type ProductVariantType = z.infer<typeof ProductVariantSchema>
 export type ProductVariantsType = z.infer<typeof ProductVariantsSchema>
@@ -215,3 +224,4 @@ export type GetProductDetailResType = z.infer<typeof GetProductDetailResSchema>
 export type UpsertVariantBodyType = z.infer<typeof UpsertVariantBodySchema>
 export type CreateProductBodyType = z.infer<typeof CreateProductBodySchema>
 export type UpdateProductBodyType = z.infer<typeof UpdateProductBodySchema>
+export type ChangeProductStatusBodyType = z.infer<typeof ChangeProductStatusBodySchema>
