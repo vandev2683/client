@@ -182,9 +182,35 @@ export default function EditRole({
                       <div className='col-span-3 w-full space-y-2 '>
                         <Accordion type='single' collapsible className='w-full' defaultValue={permissionsKeys[0]}>
                           {permissionsKeys.map((key) => {
+                            const modulePermissionIds = groupedPermissionsByModule[key].map((p) => p.id)
+                            const allChecked = modulePermissionIds.every((id) => field.value?.includes(id))
+                            const someChecked =
+                              modulePermissionIds.some((id) => field.value?.includes(id)) && !allChecked
+
                             return (
                               <AccordionItem key={key} value={key}>
-                                <AccordionTrigger className='capitalize'>{key.toLowerCase()}</AccordionTrigger>
+                                <div className='flex items-center'>
+                                  <Checkbox
+                                    className='ml-2 mr-2'
+                                    checked={allChecked}
+                                    data-state={someChecked ? 'indeterminate' : allChecked ? 'checked' : 'unchecked'}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        // Add all module permissions
+                                        const newValue = [...new Set([...field.value, ...modulePermissionIds])]
+                                        field.onChange(newValue)
+                                      } else {
+                                        // Remove all module permissions
+                                        field.onChange(
+                                          field.value?.filter((value) => !modulePermissionIds.includes(value))
+                                        )
+                                      }
+                                    }}
+                                  />
+                                  <AccordionTrigger className='capitalize flex-grow'>
+                                    {key.toLowerCase()}
+                                  </AccordionTrigger>
+                                </div>
                                 <AccordionContent className='flex flex-col gap-4 text-balance'>
                                   {groupedPermissionsByModule[key].map((permission) => {
                                     return (

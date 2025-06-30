@@ -12,9 +12,10 @@ import Table from './pages/manage/Table'
 import Coupon from './pages/manage/Coupon'
 import Role from './pages/manage/Role'
 import User from './pages/manage/User'
+import Login from './pages/client/Login'
 
-const Login = () => <div>Login Page - Sẽ được triển khai sau</div>
 const Register = () => <div>Register Page - Sẽ được triển khai sau</div>
+const ForgotPassword = () => <div>Forgot Password Page - Sẽ được triển khai sau</div>
 const Dashboard = () => <div>Dashboard Page - Sẽ được triển khai sau</div>
 const Bookings = () => <div>Bookings Page - Sẽ được triển khai sau</div>
 const Orders = () => <div>Orders Page - Sẽ được triển khai sau</div>
@@ -43,6 +44,16 @@ function RejectedRoute() {
 
 export default function useRouteElements() {
   const routeElements = useRoutes([
+    {
+      path: '',
+      element: <AuthLayout />,
+      children: [
+        {
+          path: 'forgot-password',
+          element: <ForgotPassword />
+        }
+      ]
+    },
     {
       path: '',
       element: <RejectedRoute />,

@@ -34,10 +34,10 @@ export default function ChangePassword({
 }) {
   const [inputType, setInputType] = useState<'text' | 'password'>('password')
 
-  const form = useForm<Pick<ChangePasswordBodyType, 'newPassword'>>({
-    resolver: zodResolver(ChangePasswordBodySchema.pick({ newPassword: true })),
+  const form = useForm<Pick<ChangePasswordBodyType, 'password'>>({
+    resolver: zodResolver(ChangePasswordBodySchema),
     defaultValues: {
-      newPassword: ''
+      password: ''
     }
   })
 
@@ -48,12 +48,12 @@ export default function ChangePassword({
   }
 
   const changePasswordMutation = useChangePasswordMutation()
-  const onSubmit = async (body: Pick<ChangePasswordBodyType, 'newPassword'>) => {
+  const onSubmit = async (body: ChangePasswordBodyType) => {
     if (changePasswordMutation.isPending || !userChangePassword?.id) return
     try {
       const payload = {
-        userId: userChangePassword.id as number,
-        newPassword: body.newPassword
+        userId: userChangePassword.id,
+        body
       }
       await changePasswordMutation.mutateAsync(payload)
       reset()
@@ -90,30 +90,32 @@ export default function ChangePassword({
             <div className='grid gap-4 py-4'>
               <FormField
                 control={form.control}
-                name='newPassword'
+                name='password'
                 render={({ field }) => (
                   <FormItem>
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
-                      <Label htmlFor='newPassword'>Mật khẩu mới</Label>
-                      <div className='col-span-3 w-full space-y-2 relative'>
+                      <Label htmlFor='password'>Mật khẩu mới</Label>
+                      <div className='w-full col-span-3 space-y-2 relative'>
                         <Input id='password' className='w-full' {...field} type={inputType} />
                         {inputType === 'password' ? (
                           <EyeClosed
-                            className='absolute right-2 top-2/5 -translate-y-1/2 h-4 w-4 cursor-pointer'
+                            className='absolute right-2 top-1/2s -translate-y-1/2 h-4 w-4 cursor-pointer'
+                            style={{ top: '45%' }}
                             onClick={() => {
                               setInputType((prev) => (prev === 'text' ? 'password' : 'text'))
                             }}
                           />
                         ) : (
                           <Eye
-                            className='absolute right-2 top-2/5 -translate-y-1/2 h-4 w-4 cursor-pointer'
+                            className='absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 cursor-pointer'
+                            style={{ top: '45%' }}
                             onClick={() => {
                               setInputType((prev) => (prev === 'text' ? 'password' : 'text'))
                             }}
                           />
                         )}
-                        <FormMessage />
                       </div>
+                      <FormMessage />
                     </div>
                   </FormItem>
                 )}

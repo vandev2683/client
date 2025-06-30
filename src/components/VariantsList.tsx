@@ -1,12 +1,20 @@
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
-import { Package, Plus, RefreshCcw, Trash2 } from 'lucide-react'
+import { Package, RefreshCcw, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { ProductVariantsType, UpsertVariantBodyType, VariantType } from '@/schemaValidations/product.schema'
 import { Button } from './ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from './ui/dropdown-menu'
 
 export function generateVariants(variants: ProductVariantsType) {
   // Hàm hỗ trợ để tạo tất cả tổ hợp
@@ -40,6 +48,8 @@ export default function VariantsList({
   variants: UpsertVariantBodyType[]
   setVariants: (variants: UpsertVariantBodyType[]) => void
 }) {
+  const [open, setOpen] = useState<boolean>(false)
+
   // Sử dụng useEffect để tạo variants từ variantsConfig khi component mount hoặc variantsConfig thay đổi
   useEffect(() => {
     if (variantsConfig.length > 0) {
@@ -83,6 +93,41 @@ export default function VariantsList({
     return attributes
   }
 
+  const handleResetVariants = () => {
+    if (variantsConfig.length === 0) {
+      setVariants([])
+      return
+    }
+    const generatedVariants = generateVariants(variantsConfig)
+    setVariants(generatedVariants)
+  }
+
+  const ConfirmPropdown = () => {
+    return (
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>
+          <div className='h-8'></div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='end'>
+          <DropdownMenuLabel>
+            Tạo lại danh sách biến thể theo bộ cấu hình
+            <br />
+            Có thể làm mất các biến thể cũ
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <div className='flex justify-end'>
+            <DropdownMenuItem>
+              <Button variant='outline'>No</Button>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Button onClick={handleResetVariants}>Yes</Button>
+            </DropdownMenuItem>
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
+
   // Nếu không có biến thể
   if (variants.length === 0) {
     return (
@@ -100,15 +145,24 @@ export default function VariantsList({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button type='button' variant='outline' size='sm' className='flex items-center gap-2 cursor-pointer'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  className='flex items-center gap-2 cursor-pointer'
+                  onClick={() => {
+                    setOpen(!open)
+                  }}
+                >
                   <RefreshCcw />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Default. Xóa các thuộc tính hiện có</p>
+                <p>Tạo lại danh sách Variants theo bộ cấu hình</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          <ConfirmPropdown />
 
           <Badge variant='outline' className='flex items-center cursor-default gap-2 p-2 font-medium'>
             <Package className='w-8 h-8' />
