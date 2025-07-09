@@ -1,15 +1,6 @@
-export const PaymentStatus = {
-  Pending: 'Pending',
-  Succeeded: 'Succeeded',
-  Failed: 'Failed',
-  Refunded: 'Refunded'
-} as const
-
-export const PaymentMethod = {
-  Cash: 'Cash',
-  MOMO: 'MOMO',
-  VNPay: 'VNPay',
-  COD: 'COD'
+export const OrderFee = {
+  Delivery: 30000,
+  TaxRate: 0.1 // 10%
 } as const
 
 export const OrderType = {

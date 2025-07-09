@@ -42,12 +42,7 @@ import { cn, handleError } from '@/lib/utils'
 import EditTable from './EditTable'
 import AddTable from './AddTable'
 import type { TableType } from '@/schemaValidations/table.schema'
-import {
-  useAllTablesQuery,
-  useChangeTableStatusMutation,
-  useDeleteTableMutation,
-  useUpdateTableMutation
-} from '@/queries/useTable'
+import { useAllTablesQuery, useChangeTableStatusMutation, useDeleteTableMutation } from '@/queries/useTable'
 import { TableStatusValues, type TableStatusType } from '@/constants/table'
 
 const TableContext = createContext<{

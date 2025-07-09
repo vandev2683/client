@@ -40,13 +40,9 @@ import { toast } from 'sonner'
 import { cn, formatDateTimeToLocaleString, handleError, formatCurrency } from '@/lib/utils'
 import AddCoupon from './AddCoupon'
 import type { CouponType } from '@/schemaValidations/coupon.schema'
-import {
-  useAllCouponsQuery,
-  useChangeCouponStatusMutation,
-  useDeleteCouponMutation,
-  useUpdateCouponMutation
-} from '@/queries/useCoupon'
+import { useAllCouponsQuery, useChangeCouponStatusMutation, useDeleteCouponMutation } from '@/queries/useCoupon'
 import EditCoupon from './EditCoupon'
+import { CouponDiscountType } from '@/constants/coupon'
 
 const CouponContext = createContext<{
   couponIdEdit: number | undefined
@@ -68,8 +64,14 @@ export const columns: ColumnDef<CouponType>[] = [
   },
   {
     accessorKey: 'discountValue',
-    header: '%',
-    cell: ({ row }) => <div className='capitalize'>{row.getValue('discountValue')}%</div>
+    header: '%/Amount',
+    cell: ({ row }) => (
+      <div className='capitalize'>
+        {row.original.discountType === CouponDiscountType.Amount
+          ? formatCurrency(row.getValue('discountValue'))
+          : `${row.getValue('discountValue')}%`}
+      </div>
+    )
   },
   {
     accessorKey: 'minOrderAmount',

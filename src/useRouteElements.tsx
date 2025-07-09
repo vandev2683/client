@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation, useRoutes } from 'react-router'
 import ManageLayout from './layouts/manage'
-import Product from './pages/manage/Product'
+import ManageProduct from './pages/manage/Product'
 import Tag from './pages/manage/Tag'
 import ManageLogin from './pages/manage/Login'
 import AuthLayout from './layouts/auth'
@@ -13,9 +13,16 @@ import Coupon from './pages/manage/Coupon'
 import Role from './pages/manage/Role'
 import User from './pages/manage/User'
 import Login from './pages/client/Login'
+import OAuth from './pages/client/OAuth'
+import Register from './pages/client/Register'
+import ForgotPassword from './pages/client/ForgotPassword'
+import ClientLayout from './layouts/client'
+import Product from './pages/client/Product'
+import ProductDetail from './pages/client/ProductDetail'
+import Cart from './pages/client/Cart'
+import Checkout from './pages/client/Checkout'
+import PaymentCallback from './pages/client/PaymentCallback'
 
-const Register = () => <div>Register Page - Sẽ được triển khai sau</div>
-const ForgotPassword = () => <div>Forgot Password Page - Sẽ được triển khai sau</div>
 const Dashboard = () => <div>Dashboard Page - Sẽ được triển khai sau</div>
 const Bookings = () => <div>Bookings Page - Sẽ được triển khai sau</div>
 const Orders = () => <div>Orders Page - Sẽ được triển khai sau</div>
@@ -46,11 +53,48 @@ export default function useRouteElements() {
   const routeElements = useRoutes([
     {
       path: '',
-      element: <AuthLayout />,
+      element: <ClientLayout />,
       children: [
         {
-          path: 'forgot-password',
-          element: <ForgotPassword />
+          path: 'oauth-google-callback',
+          element: <OAuth />
+        },
+        {
+          path: '',
+          index: true,
+          element: <Product />
+        },
+        {
+          path: ':productName',
+          element: <ProductDetail />
+        },
+        {
+          path: 'cart',
+          element: <Cart />
+        }
+      ]
+    },
+    {
+      path: '',
+      element: <RejectedRoute />,
+      children: [
+        {
+          path: '',
+          element: <ClientLayout />,
+          children: [
+            {
+              path: 'login',
+              element: <Login />
+            },
+            {
+              path: 'register',
+              element: <Register />
+            },
+            {
+              path: 'forgot-password',
+              element: <ForgotPassword />
+            }
+          ]
         }
       ]
     },
@@ -62,14 +106,6 @@ export default function useRouteElements() {
           path: '',
           element: <AuthLayout />,
           children: [
-            {
-              path: 'login',
-              element: <Login />
-            },
-            {
-              path: 'register',
-              element: <Register />
-            },
             {
               path: 'manage/login',
               element: <ManageLogin />
@@ -83,6 +119,16 @@ export default function useRouteElements() {
       element: <ProtectedRoute />,
       children: [
         {
+          path: '',
+          element: <ClientLayout />,
+          children: [
+            {
+              path: 'checkout',
+              element: <Checkout />
+            }
+          ]
+        },
+        {
           path: 'manage',
           element: <ManageLayout />,
           children: [
@@ -92,7 +138,7 @@ export default function useRouteElements() {
             },
             {
               path: 'products',
-              element: <Product />
+              element: <ManageProduct />
             },
             {
               path: 'categories',
@@ -129,6 +175,10 @@ export default function useRouteElements() {
           ]
         }
       ]
+    },
+    {
+      path: 'payment-callback',
+      element: <PaymentCallback />
     },
     {
       path: '*',

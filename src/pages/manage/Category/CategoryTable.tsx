@@ -42,6 +42,7 @@ import type { CategoryWithParentType } from '@/schemaValidations/category.schema
 import { useAllCategoriesQuery, useDeleteCategoryMutation } from '@/queries/useCategory'
 import AddCategory from './AddCategory'
 import EditCategory from './EditCategory'
+import Config from '@/constants/config'
 
 const CategoryContext = createContext<{
   categoryIdEdit: number | undefined
@@ -56,6 +57,25 @@ const CategoryContext = createContext<{
 })
 
 export const columns: ColumnDef<CategoryWithParentType>[] = [
+  {
+    accessorKey: 'thumbnail',
+    header: 'Thumbnail',
+    cell: ({ row }) => {
+      const thumbnail = row.getValue('thumbnail') as string | null
+      if (!thumbnail) {
+        return (
+          <img
+            src={Config.ImageBaseUrl}
+            alt={row.getValue('name') as string}
+            className='w-24 h-24 object-cover rounded-md ml-4'
+          />
+        )
+      }
+      return (
+        <img src={thumbnail} alt={row.getValue('name') as string} className='w-24 h-24 object-cover rounded-md ml-4' />
+      )
+    }
+  },
   {
     accessorKey: 'name',
     header: 'Name',
@@ -243,7 +263,7 @@ export default function CategoryTable() {
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id} className={header.id === 'name' ? 'pl-6' : ''}>
+                      <TableHead key={header.id} className={header.id === 'thumbnail' ? 'pl-6' : ''}>
                         {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     )

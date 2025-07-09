@@ -1,6 +1,6 @@
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
-import { Package, RefreshCcw, Trash2 } from 'lucide-react'
+import { Check, Package, RefreshCcw, Scan, SquareMousePointer, Trash2, Upload } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useEffect, useState } from 'react'
@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from './ui/dropdown-menu'
+import { Dialog, DialogContent } from './ui/dialog'
 
 export function generateVariants(variants: ProductVariantsType) {
   // Hàm hỗ trợ để tạo tất cả tổ hợp
@@ -38,17 +39,21 @@ export function generateVariants(variants: ProductVariantsType) {
 }
 
 export default function VariantsList({
+  imagesExists,
   variantsConfig,
   variantsInDB,
   variants,
   setVariants
 }: {
+  imagesExists?: string[]
   variantsConfig: ProductVariantsType
   variantsInDB?: VariantType[]
   variants: UpsertVariantBodyType[]
   setVariants: (variants: UpsertVariantBodyType[]) => void
 }) {
   const [open, setOpen] = useState<boolean>(false)
+  const [isOpenPreview, setIsOpenPreview] = useState(false)
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState<number | null>(null)
 
   // Sử dụng useEffect để tạo variants từ variantsConfig khi component mount hoặc variantsConfig thay đổi
   useEffect(() => {
@@ -170,24 +175,86 @@ export default function VariantsList({
           </Badge>
         </div>
       </div>
+
       <ScrollArea className='max-h-[500px] overflow-y-auto'>
-        <div className='space-y-3'>
+        <div className='space-y-4'>
           {variants.map((variant, index) => {
             const attributes = parseAttributes(variant.value)
             return (
-              <Card key={variant.value + index} className='border border-gray-200 hover:shadow-md transition-shadow'>
-                <CardContent>
-                  <div className='flex items-center justify-between'>
-                    <div className='max-w-[60%]'>
-                      <p className='text-gray-900'>
-                        {index + 1}: {variant.value}
-                      </p>
-                      <div className='flex flex-wrap gap-1 mt-1'>
-                        {Object.entries(attributes).map(([key, value]) => (
-                          <Badge key={key} variant='outline' className='text-xs'>
-                            {value === 'default' ? 'default' : key}: {value}
-                          </Badge>
-                        ))}
+              <Card key={variant.value + index} className='border border-gray-200'>
+                <CardContent className='px-4'>
+                  <div className='space-y-3 flex items-center justify-between'>
+                    <div className='col-span-2 max-w-[60%] flex items-center gap-4'>
+                      <div className='relative group'>
+                        {imagesExists && (
+                          <button
+                            className='shrink-0 flex aspect-square w-[80px] items-center justify-center rounded-md border border-dashed hover:bg-gray-50 transition-colors'
+                            type='button'
+                            onClick={() => {
+                              if (imagesExists && imagesExists.length > 0) {
+                                setSelectedVariantIndex(index)
+                                setIsOpenPreview(true)
+                              }
+                            }}
+                          >
+                            {variant.thumbnail ? (
+                              <img
+                                src={variant.thumbnail}
+                                alt={variant.value}
+                                className='w-full h-full object-cover rounded-md'
+                              />
+                            ) : (
+                              <Upload className='h-4 w-4 text-muted-foreground' />
+                            )}
+                          </button>
+                        )}
+
+                        {/* Overlay với 2 nút khi hover */}
+                        {variant.thumbnail && (
+                          <div className='absolute inset-0 bg-black/30 rounded-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2'>
+                            <button
+                              type='button'
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (imagesExists && imagesExists.length > 0) {
+                                  setSelectedVariantIndex(index)
+                                  setIsOpenPreview(true)
+                                }
+                              }}
+                            >
+                              <SquareMousePointer className='w-5 h-5 text-white cursor-pointer' />
+                            </button>
+                            <button
+                              type='button'
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const updatedVariants = variants.map((v) =>
+                                  v.value === variant.value ? { ...v, thumbnail: null } : v
+                                )
+                                setVariants(updatedVariants)
+                              }}
+                            >
+                              <Trash2 className='w-5 h-5 text-white cursor-pointer' />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className='text-gray-900 flex gap-1 max-w-[200px]'>
+                          <span>{index + 1}:</span>
+                          <span className='truncate' title={variant.value}>
+                            {variant.value}
+                          </span>
+                        </p>
+                        <div className='flex flex-wrap gap-1 mt-1'>
+                          {Object.entries(attributes).map(([key, value]) => (
+                            <Badge key={key} variant='outline' className='text-xs'>
+                              <span className='max-w-40 truncate' title={`${key}: ${value}`}>
+                                {value === 'default' ? 'default' : key}: {value}
+                              </span>
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -249,6 +316,46 @@ export default function VariantsList({
           })}
         </div>
       </ScrollArea>
+
+      <Dialog open={isOpenPreview} onOpenChange={setIsOpenPreview}>
+        <DialogContent className='max-w-4xl max-h-[80vh] overflow-y-auto'>
+          <div className='p-2'>
+            <h2 className='text-lg font-semibold mb-1'>Chọn ảnh cho biến thể</h2>
+            <p className='mb-4 text-sm italic'>Note: Chỉ những ảnh đã Thêm/Sửa thành công mới được chọn</p>
+            {imagesExists && imagesExists.length > 0 ? (
+              <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'>
+                {imagesExists.map((imageUrl, imageIndex) => (
+                  <div
+                    key={imageIndex}
+                    className='relative group cursor-pointer border-2 border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 transition-all'
+                    onClick={() => {
+                      if (selectedVariantIndex !== null) {
+                        const updatedVariants = variants.map((variant, index) =>
+                          index === selectedVariantIndex ? { ...variant, thumbnail: imageUrl } : variant
+                        )
+                        setVariants(updatedVariants)
+                        setIsOpenPreview(false)
+                        setSelectedVariantIndex(null)
+                      }
+                    }}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`Image ${imageIndex + 1}`}
+                      className='w-full object-contain group-hover:scale-105 transition-transform'
+                    />
+                    <div className='absolute inset-0 hover:bg-black/30 flex items-center justify-center'>
+                      <Check className='w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity' />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='text-center py-8 text-gray-500'>Không có ảnh nào để chọn</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

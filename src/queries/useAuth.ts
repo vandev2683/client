@@ -30,3 +30,9 @@ export const useLogoutMutation = () => {
     mutationFn: authApis.logout
   })
 }
+
+export const useForgotPasswordMutation = () => {
+  return useMutation({
+    mutationFn: authApis.forgotPassword
+  })
+}

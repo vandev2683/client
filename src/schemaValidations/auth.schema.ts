@@ -49,7 +49,7 @@ export const RegisterBodySchema = UserSchema.pick({
   password: true
 })
   .extend({
-    confirmPassword: z.string(),
+    confirmPassword: z.string().min(1),
     code: z.string().length(6)
   })
   .strict()
@@ -84,9 +84,11 @@ export const LoginResSchema = z.object({
   })
 })
 
+export const RegisterResSchema = LoginResSchema
+
 export const LogoutBodySchema = RefreshTokenBodySchema
 
-export const ResetPasswordBodySchema = UserSchema.pick({
+export const ForgotPasswordBodySchema = UserSchema.pick({
   email: true,
   password: true
 })
@@ -119,7 +121,8 @@ export type RefreshTokenResType = z.infer<typeof RefreshTokenResSchema>
 export type RegisterBodyType = z.infer<typeof RegisterBodySchema>
 export type LoginBodyType = z.infer<typeof LoginBodySchema>
 export type LoginResType = z.infer<typeof LoginResSchema>
+export type RegisterResType = z.infer<typeof RegisterResSchema>
 export type LogoutBodyType = z.infer<typeof LogoutBodySchema>
-export type ResetPasswordBodyType = z.infer<typeof ResetPasswordBodySchema>
+export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>
 
 export type GoogleAuthResType = z.infer<typeof GoogleAuthResSchema>

@@ -47,7 +47,10 @@ class Http {
     this.instance.interceptors.response.use(
       (response) => {
         const { url } = response.config
-        if (formatUrl(url as string) === formatUrl('/auth/login')) {
+        if (
+          formatUrl(url as string) === formatUrl('/auth/login') ||
+          formatUrl(url as string) === formatUrl('/auth/register')
+        ) {
           const { tokens, user } = response.data as LoginResType
           this.accessToken = tokens.accessToken
           this.refreshToken = tokens.refreshToken

@@ -3,8 +3,8 @@ import type {
   ChangeProductStatusBodyType,
   CreateProductBodyType,
   GetAllProductsResType,
-  GetProductDetailResType,
   GetProductsResType,
+  ProductDetailType,
   ProductQueryType,
   ProductType,
   UpdateProductBodyType
@@ -25,7 +25,7 @@ const manageProductApis = {
   },
 
   findDetail(productId: number) {
-    return http.get<GetProductDetailResType>(`${BASE_URL}/${productId}`)
+    return http.get<ProductDetailType>(`${BASE_URL}/${productId}`)
   },
 
   create(body: CreateProductBodyType) {

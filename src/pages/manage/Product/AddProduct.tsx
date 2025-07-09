@@ -310,12 +310,6 @@ export default function AddProduct() {
           </form>
         </Form>
         <DialogFooter className='flex items-center gap-4'>
-          <div className='flex items-center justify-between px-4 py-2 bg-blue-100 rounded-lg'>
-            <div className='flex items-center gap-2'>
-              <Package className='w-5 h-5 text-blue-600' />
-              <span className='font-medium text-gray-900'>Tổng: {form.getValues('variants').length} biến thể</span>
-            </div>
-          </div>
           <Button type='submit' form='add-product-form'>
             Thêm
           </Button>

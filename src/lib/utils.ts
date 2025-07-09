@@ -2,13 +2,14 @@
 import { clsx, type ClassValue } from 'clsx'
 import { type UseFormSetError } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
-import { toast } from 'sonner'
 import type { LoginResType } from '@/schemaValidations/auth.schema'
 import type { ProfileType } from '@/schemaValidations/profile.schema'
 import type { AccessTokenPayloadType, RefreshTokenPayloadType } from '@/types/jwt.t'
 import { EntityError } from '@/constants/error'
 import { jwtDecode } from 'jwt-decode'
 import { format } from 'date-fns'
+import { AxiosError } from 'axios'
+import { HttpStatus } from '@/constants/http'
 
 export const LocalStorageEventTarget = new EventTarget()
 
@@ -69,12 +70,27 @@ export function handleError(error: any, setError?: UseFormSetError<any>, duratio
         type: 'server'
       })
     })
-  } else {
-    toast('Error', {
-      description: error.response.data.message ?? 'Error not exist',
-      duration: duration ?? 3000
+  } else if (error instanceof AxiosError && error.status === HttpStatus.Entity && setError) {
+    if (typeof error.response?.data.message === 'string') {
+      setError(error.response.data.path, {
+        message: error.response.data.message,
+        type: 'server'
+      })
+      return
+    }
+    error.response?.data.message.forEach((item: { path: string; message: string }) => {
+      setError(item.path, {
+        message: item.message,
+        type: 'server'
+      })
     })
   }
+  // else {
+  //   toast('Error', {
+  //     description: error.response.data.message ?? 'Error not exist',
+  //     duration: duration ?? 3000
+  //   })
+  // }
 }
 
 export const formatCurrency = (number: number) => {
@@ -84,6 +100,32 @@ export const formatCurrency = (number: number) => {
   }).format(number)
 }
 
+export const removeVietnameseAccents = (str: string): string => {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+}
+
 export const formatDateTimeToLocaleString = (date: string | Date) => {
   return format(date instanceof Date ? date : new Date(date), 'HH:mm dd/MM/yyyy')
+}
+
+export const getFirstNameClient = (name: string) => {
+  const arr = name.split(' ')
+  const firstName = arr[arr.length - 1]
+  const formattedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1)
+  if (formattedFirstName.length > 6) {
+    return formattedFirstName.slice(0, 6) + '...'
+  }
+  return formattedFirstName
+}
+
+export const generateNameId = (params: { name: string; id: number }) => {
+  return `${params.name}-.${params.id}`
+}
+
+export const getIdByNameId = (productName: string) => {
+  return productName.split('-.')[1]
 }

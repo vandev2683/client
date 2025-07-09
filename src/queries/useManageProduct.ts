@@ -41,7 +41,7 @@ export const useUpdateProductMutation = () => {
   return useMutation({
     mutationFn: manageProductApis.update,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'], exact: true })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
     }
   })
 }

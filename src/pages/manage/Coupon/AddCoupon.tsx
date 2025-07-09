@@ -18,6 +18,8 @@ import { CalendarIcon } from '@radix-ui/react-icons'
 import { Calendar } from '@/components/ui/calendar'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { CouponDiscountType, CouponDiscountTypeValues } from '@/constants/coupon'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export default function AddCoupon() {
   const [open, setOpen] = useState(false)
@@ -26,6 +28,7 @@ export default function AddCoupon() {
     defaultValues: {
       code: '',
       description: '',
+      discountType: CouponDiscountType.Percent,
       discountValue: 1,
       minOrderAmount: 0,
       usageLimit: 0,
@@ -111,6 +114,34 @@ export default function AddCoupon() {
                       <Label htmlFor='code'>Mã giảm giá</Label>
                       <div className='col-span-3 w-full space-y-2'>
                         <Input id='code' className='w-full' {...field} />
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='discountType'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='discountType'>Loại giá trị</Label>
+                      <div className='col-span-3 w-full space-y-2'>
+                        <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+                          <FormControl id='discountType'>
+                            <SelectTrigger className='w-[50%]'>
+                              <SelectValue placeholder='Chọn loại giảm giá' />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {CouponDiscountTypeValues.map((value) => (
+                              <SelectItem key={value} value={value}>
+                                {value}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </div>
                     </div>

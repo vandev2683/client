@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Eye, Trash2 } from 'lucide-react'
+import { Dialog, DialogContent } from './ui/dialog'
 
 export default function ImageUpload({
   files,
@@ -45,6 +46,16 @@ export default function ImageUpload({
 
   return (
     <div>
+      <Dialog
+        open={Boolean(selectedImage)}
+        onOpenChange={() => {
+          setSelectedImage(null)
+        }}
+      >
+        <DialogContent className='flex items-center justify-center'>
+          <img src={selectedImage as string} alt='Popup Preview' className='h-full object-contain' />
+        </DialogContent>
+      </Dialog>
       <div className='flex flex-wrap gap-4'>
         {files.map((file, index) => {
           if (typeof file === 'string') {
@@ -101,17 +112,6 @@ export default function ImageUpload({
           </label>
         )}
       </div>
-
-      {selectedImage && (
-        <div
-          className='fixed inset-0 bg-black/50 bg-opacity-70 flex justify-center items-center z-50'
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className='bg-white p-2 rounded-lg max-w-md max-h-[80vh] overflow-hidden'>
-            <img src={selectedImage} alt='Popup Preview' className='w-full h-full object-contain' />
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -1,10 +1,12 @@
 import http from '@/lib/http'
 import type {
+  ForgotPasswordBodyType,
   GoogleAuthResType,
   LoginBodyType,
   LoginResType,
   LogoutBodyType,
   RegisterBodyType,
+  RegisterResType,
   SendOTPBodyType
 } from '@/schemaValidations/auth.schema'
 import type { MessageResType } from '@/schemaValidations/response.schema'
@@ -17,7 +19,7 @@ const authApis = {
   },
 
   register(body: RegisterBodyType) {
-    return http.post<MessageResType>(`${BASE_URL}/register`, body)
+    return http.post<RegisterResType>(`${BASE_URL}/register`, body)
   },
 
   login(body: LoginBodyType) {
@@ -30,6 +32,10 @@ const authApis = {
 
   logout(body: LogoutBodyType) {
     return http.post<MessageResType>(`${BASE_URL}/logout`, body)
+  },
+
+  forgotPassword(body: ForgotPasswordBodyType) {
+    return http.post<MessageResType>(`${BASE_URL}/forgot-password`, body)
   }
 }
 

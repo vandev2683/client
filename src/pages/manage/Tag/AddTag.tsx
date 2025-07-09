@@ -3,25 +3,20 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { PlusCircle, Upload } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { PlusCircle } from 'lucide-react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { CreateTagBodySchema, type CreateTagBodyType } from '@/schemaValidations/tag.schema'
 import { toast } from 'sonner'
 import { handleError } from '@/lib/utils'
 import { TagTypeValues } from '@/constants/tag'
 import TinyEditor from '@/components/TinyEditor'
-import { Editor } from '@tinymce/tinymce-react'
 import { useCreateTagMutation } from '@/queries/useTag'
 
 export default function AddTag() {
-  // const [file, setFile] = useState<File | null>(null)
   const [open, setOpen] = useState(false)
-  // const imageInputRef = useRef<HTMLInputElement | null>(null)
   const form = useForm<CreateTagBodyType>({
     resolver: zodResolver(CreateTagBodySchema),
     defaultValues: {
@@ -30,40 +25,20 @@ export default function AddTag() {
       description: ''
     }
   })
-  // const image = form.watch('image')
-  const name = form.watch('name')
-  // const previewAvatarFromFile = useMemo(() => {
-  //   if (file) {
-  //     return URL.createObjectURL(file)
-  //   }
-  //   return image
-  // }, [file, image])
 
   const reset = () => {
     setOpen((prep) => !prep)
-    // setFile(null)
     form.reset()
   }
 
-  // const uploadImageMutation = useUploadImageMutation()
   const createTagMutation = useCreateTagMutation()
 
   const onSubmit = async (body: CreateTagBodyType) => {
     if (createTagMutation.isPending) return
     try {
-      // if (file) {
-      //   const formData = new FormData()
-      //   formData.append('file', file)
-      //   const uploadResult = await uploadImageMutation.mutateAsync(formData)
-
-      //   body = {
-      //     ...body,
-      //     image: uploadResult.payload.data
-      //   }
-      // }
-      const result = await createTagMutation.mutateAsync(body)
+      await createTagMutation.mutateAsync(body)
       reset()
-      toast('Created tag successfully')
+      toast.success('Thêm thẻ thành công')
     } catch (error) {
       handleError(error, form.setError)
     }
@@ -85,49 +60,12 @@ export default function AddTag() {
           <form
             noValidate
             className='grid auto-rows-max items-start gap-4 md:gap-8 z-50'
-            id='add-dish-form'
+            id='add-tag-form'
             onSubmit={form.handleSubmit(onSubmit, (error) => {
               console.log(error)
             })}
           >
             <div className='grid gap-4 py-4'>
-              {/* <FormField
-                control={form.control}
-                name='image'
-                render={({ field }) => (
-                  <FormItem>
-                    <div className='flex gap-2 items-start justify-start'>
-                      <Avatar className='aspect-square w-[100px] h-[100px] rounded-md object-cover'>
-                        <AvatarImage src={previewAvatarFromFile} />
-                        <AvatarFallback className='rounded-none'>{name || 'Avatar'}</AvatarFallback>
-                      </Avatar>
-                      <input
-                        type='file'
-                        accept='image/*'
-                        ref={imageInputRef}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) {
-                            setFile(file)
-                            field.onChange('http://localhost:3000/' + file.name)
-                          }
-                        }}
-                        className='hidden'
-                      />
-                      <button
-                        className='flex aspect-square w-[100px] items-center justify-center rounded-md border border-dashed'
-                        type='button'
-                        onClick={() => imageInputRef.current?.click()}
-                      >
-                        <Upload className='h-4 w-4 text-muted-foreground' />
-                        <span className='sr-only'>Upload</span>
-                      </button>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              /> */}
-
               <FormField
                 control={form.control}
                 name='name'
@@ -190,7 +128,7 @@ export default function AddTag() {
           </form>
         </Form>
         <DialogFooter>
-          <Button type='submit' form='add-dish-form'>
+          <Button type='submit' form='add-tag-form'>
             Thêm
           </Button>
         </DialogFooter>

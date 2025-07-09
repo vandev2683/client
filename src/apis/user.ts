@@ -8,7 +8,8 @@ import type {
   GetAllUsersResType,
   GetUsersResType,
   UpdateUserBodyType,
-  UserType
+  UserType,
+  UserWithRoleType
 } from '@/schemaValidations/user.schema'
 
 const BASE_URL = '/users'
@@ -25,7 +26,7 @@ const userApis = {
   },
 
   findDetail(userId: number) {
-    return http.get<UserType>(`${BASE_URL}/${userId}`)
+    return http.get<UserWithRoleType>(`${BASE_URL}/${userId}`)
   },
 
   create(body: CreateUserBodyType) {

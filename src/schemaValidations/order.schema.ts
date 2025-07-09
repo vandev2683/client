@@ -1,22 +1,9 @@
-import { OrderStatus, OrderType, PaymentMethod, PaymentStatus } from '@/constants/order'
+import { OrderStatus, OrderType } from '@/constants/order'
+import { PaymentMethod, PaymentStatus } from '@/constants/payment'
 import { z } from 'zod'
+import { PaymentSchema } from './payment.schema'
+import { CartItemDetailSchema } from './cart.schema'
 
-export const PaymentSchema = z.object({
-  paymentMethod: z.nativeEnum(PaymentMethod),
-  paymentStatus: z.nativeEnum(PaymentStatus).default(PaymentStatus.Pending),
-  paidAt: z.date().nullable().default(null),
-  transactionId: z.string().trim().default('')
-})
-
-export type PaymentType = z.infer<typeof PaymentSchema>
-
-// Order item schema for creating orders
-export const OrderItemInputSchema = z.object({
-  variantId: z.number().int().positive(),
-  quantity: z.number().int().positive()
-})
-
-// Base schema for order data
 export const OrderSchema = z.object({
   id: z.number(),
   orderType: z.nativeEnum(OrderType),
@@ -27,6 +14,7 @@ export const OrderSchema = z.object({
   bookingId: z.number().nullable(),
   couponId: z.number().nullable(),
   totalAmount: z.number().positive(),
+  feeAmount: z.number().nonnegative().default(0),
   discountAmount: z.number().nonnegative().default(0),
   finalAmount: z.number().positive(),
   payment: PaymentSchema,
@@ -36,3 +24,37 @@ export const OrderSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date()
 })
+
+export const OrderItemSchema = z.object({
+  id: z.number(),
+  productName: z.string(),
+  thumbnail: z.string().optional(),
+  variantValue: z.string(),
+  quantity: z.number().int().positive(),
+  price: z.number().nonnegative(),
+  orderId: z.number().int(),
+  productId: z.number().int().nullable(),
+  variantId: z.number().int().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
+
+export const CreateOnlineOrderBodySchema = OrderSchema.pick({
+  deliveryAddressId: true,
+  couponId: true,
+  note: true
+})
+  .extend({
+    paymentMethod: z.nativeEnum(PaymentMethod),
+    cartItems: z.array(CartItemDetailSchema).min(1, 'Đơn hàng phải có ít nhất một sản phẩm')
+  })
+  .strict()
+
+export const CreateOrderResSchema = z.object({
+  message: z.string(),
+  paymentUrl: z.string().optional()
+})
+
+export type OrderItemType = z.infer<typeof OrderItemSchema>
+export type CreateOnlineOrderBodyType = z.infer<typeof CreateOnlineOrderBodySchema>
+export type CreateOrderResType = z.infer<typeof CreateOrderResSchema>

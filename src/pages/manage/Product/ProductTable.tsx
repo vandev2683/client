@@ -45,8 +45,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import {
   useAllProductsQuery,
   useChangeProductStatusMutation,
-  useDeleteProductMutation,
-  useUpdateProductMutation
+  useDeleteProductMutation
 } from '@/queries/useManageProduct'
 import Config from '@/constants/config'
 import EditProduct from './EditProduct'
@@ -116,7 +115,7 @@ export const columns: ColumnDef<ProductType>[] = [
         }
       }
 
-      const status = row.getValue('status') as ProductStatusType
+      const status = row.original.status
       let classNameStatus =
         'capitalize bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300'
       if (status === 'OutOfStock') {
@@ -137,7 +136,7 @@ export const columns: ColumnDef<ProductType>[] = [
               className='w-0 p-0 h-0 border-none shadow-none hover:shadow-none focus:shadow-none'
               hasIcon={false}
             >
-              <span className={cn([classNameStatus, 'cursor-pointer'])}>{row.getValue('status')}</span>
+              <span className={cn([classNameStatus, 'cursor-pointer'])}>{row.original.status}</span>
             </SelectTrigger>
 
             <SelectContent>

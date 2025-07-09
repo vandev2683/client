@@ -1,9 +1,11 @@
+import { CouponDiscountType } from '@/constants/coupon'
 import { z } from 'zod'
 
 export const CouponSchema = z.object({
   id: z.number(),
   code: z.string().min(1).max(500),
   description: z.string(),
+  discountType: z.nativeEnum(CouponDiscountType),
   discountValue: z.coerce.number().positive(),
   minOrderAmount: z.coerce.number().nonnegative(),
   usageLimit: z.coerce.number().int().nonnegative(),
@@ -33,14 +35,45 @@ export const GetAllCouponsResSchema = GetCouponsResSchema.pick({
 export const CreateCouponBodySchema = CouponSchema.pick({
   code: true,
   description: true,
+  discountType: true,
   discountValue: true,
   minOrderAmount: true,
   usageLimit: true,
   isActive: true,
   expiresAt: true
-}).strict()
+})
+  .strict()
+  .superRefine(({ discountType, discountValue }, ctx) => {
+    if (discountType === 'Percent' && (discountValue < 0 || discountValue > 100)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Giá trị giảm giá phần trăm phải nằm trong khoảng từ 0 đến 100.',
+        path: ['discountValue']
+      })
+    } else if (discountType === 'Amount' && discountValue <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Giá trị giảm giá tiền tệ phải lớn hơn 0.',
+        path: ['discountValue']
+      })
+    }
+  })
 
-export const UpdateCouponBodySchema = CreateCouponBodySchema
+export const UpdateCouponBodySchema = CreateCouponBodySchema.superRefine(({ discountType, discountValue }, ctx) => {
+  if (discountType === 'Percent' && (discountValue < 0 || discountValue > 100)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Giá trị giảm giá phần trăm phải nằm trong khoảng từ 0 đến 100.',
+      path: ['discountValue']
+    })
+  } else if (discountType === 'Amount' && discountValue <= 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Giá trị giảm giá tiền tệ phải lớn hơn 0.',
+      path: ['discountValue']
+    })
+  }
+})
 
 export const ChangeCouponStatusBodySchema = CouponSchema.pick({
   isActive: true

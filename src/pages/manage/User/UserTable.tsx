@@ -40,13 +40,8 @@ import { toast } from 'sonner'
 import { cn, handleError } from '@/lib/utils'
 import EditUser from './EditUser'
 import AddUser from './AddUser'
-import type { UserType, UserWithRoleType } from '@/schemaValidations/user.schema'
-import {
-  useAllUsersQuery,
-  useChangeUserStatusMutation,
-  useDeleteUserMutation,
-  useUpdateUserMutation
-} from '@/queries/useUser'
+import type { UserWithRoleType } from '@/schemaValidations/user.schema'
+import { useAllUsersQuery, useChangeUserStatusMutation, useDeleteUserMutation } from '@/queries/useUser'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { UserStatusValues, type UserStatusType } from '@/constants/user'
 import ChangePassword from './ChangePassword'

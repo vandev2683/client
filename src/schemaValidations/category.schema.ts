@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const CategorySchema = z.object({
   id: z.number(),
   name: z.string().min(1).max(500),
+  thumbnail: z.string().nullable(),
   parentCategoryId: z.number().or(z.string()).nullable(),
   description: z.string(),
   createdAt: z.date(),
@@ -12,7 +13,8 @@ export const CategorySchema = z.object({
 export const CategoryWithParentSchema = CategorySchema.extend({
   parentCategory: CategorySchema.pick({
     id: true,
-    name: true
+    name: true,
+    thumbnail: true
   })
     .nullable()
     .default(null)
@@ -40,7 +42,8 @@ export const GetCategoryDetailResSchema = CategoryWithParentSchema.extend({
     .array(
       CategorySchema.pick({
         id: true,
-        name: true
+        name: true,
+        thumbnail: true
       })
     )
     .default([])
@@ -48,6 +51,7 @@ export const GetCategoryDetailResSchema = CategoryWithParentSchema.extend({
 
 export const CreateCategoryBodySchema = CategorySchema.pick({
   name: true,
+  thumbnail: true,
   parentCategoryId: true,
   description: true
 }).strict()

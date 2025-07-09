@@ -129,7 +129,7 @@ export default function EditUser({
           <form
             noValidate
             className='grid auto-rows-max items-start gap-4 md:gap-8'
-            id='edit-dish-form'
+            id='edit-user-form'
             onSubmit={form.handleSubmit(onSubmit, (error) => {
               console.log(error)
             })}
@@ -320,8 +320,8 @@ export default function EditUser({
                           onValueChange={(val) => {
                             field.onChange(Number(val))
                           }}
-                          defaultValue={field.value.toString()}
-                          value={form.getValues('roleId').toString()}
+                          defaultValue={field.value?.toString() || roles[0]?.id.toString()}
+                          value={form.getValues('roleId')?.toString()}
                         >
                           <FormControl id='roleId'>
                             <SelectTrigger className='w-[50%]'>
@@ -346,7 +346,7 @@ export default function EditUser({
           </form>
         </Form>
         <DialogFooter>
-          <Button type='submit' form='edit-dish-form'>
+          <Button type='submit' form='edit-user-form'>
             Lưu
           </Button>
         </DialogFooter>

@@ -24,6 +24,8 @@ import { toast } from 'sonner'
 import TinyEditor from '@/components/TinyEditor'
 import { UpdateCouponBodySchema, type UpdateCouponBodyType } from '@/schemaValidations/coupon.schema'
 import { useCouponDetailQuery, useUpdateCouponMutation } from '@/queries/useCoupon'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CouponDiscountType, CouponDiscountTypeValues } from '@/constants/coupon'
 
 export default function EditCoupon({
   id,
@@ -39,6 +41,7 @@ export default function EditCoupon({
     defaultValues: {
       code: '',
       description: '',
+      discountType: CouponDiscountType.Percent,
       discountValue: 1,
       minOrderAmount: 0,
       usageLimit: 0,
@@ -55,11 +58,12 @@ export default function EditCoupon({
   const couponDetailQuery = useCouponDetailQuery(id)
   useEffect(() => {
     if (couponDetailQuery.data) {
-      const { code, description, discountValue, minOrderAmount, expiresAt, usageLimit, isActive } =
+      const { code, description, discountType, discountValue, minOrderAmount, expiresAt, usageLimit, isActive } =
         couponDetailQuery.data.data
       form.reset({
         code,
         description,
+        discountType,
         discountValue,
         minOrderAmount,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
@@ -147,6 +151,34 @@ export default function EditCoupon({
                       <Label htmlFor='code'>Mã giảm giá</Label>
                       <div className='col-span-3 w-full space-y-2'>
                         <Input id='code' className='w-full' {...field} />
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='discountType'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='discountType'>Loại giá trị</Label>
+                      <div className='col-span-3 w-full space-y-2'>
+                        <Select onValueChange={field.onChange} defaultValue={field.value?.toString()}>
+                          <FormControl id='discountType'>
+                            <SelectTrigger className='w-[50%]'>
+                              <SelectValue placeholder='Chọn loại giảm giá' />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {CouponDiscountTypeValues.map((value) => (
+                              <SelectItem key={value} value={value}>
+                                {value}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </div>
                     </div>

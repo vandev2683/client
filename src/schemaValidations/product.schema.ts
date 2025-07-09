@@ -110,8 +110,14 @@ export const ProductQuerySchema = PaginationQuerySchema.extend({
   sortBy: z.nativeEnum(SortBy).default(SortBy.CreatedAt)
 })
 
+export const ProductDetailSchema = ProductSchema.extend({
+  variants: z.array(VariantSchema),
+  categories: z.array(CategorySchema),
+  tags: z.array(TagSchema)
+})
+
 export const GetProductsResSchema = z.object({
-  data: z.array(ProductSchema),
+  data: z.array(ProductDetailSchema),
   totalItems: z.number(),
   page: z.number(),
   limit: z.number(),
@@ -121,12 +127,6 @@ export const GetProductsResSchema = z.object({
 export const GetAllProductsResSchema = GetProductsResSchema.pick({
   data: true,
   totalItems: true
-})
-
-export const GetProductDetailResSchema = ProductSchema.extend({
-  variants: z.array(VariantSchema),
-  categories: z.array(CategorySchema),
-  tags: z.array(TagSchema)
 })
 
 export const UpsertVariantBodySchema = VariantSchema.pick({
@@ -191,11 +191,8 @@ export const CreateProductBodySchema = ProductSchema.pick({
     // Kiểm tra xem các giá trị của variants có khớp với variantsConfig không
 
     for (let i = 0; i < variants.length; i++) {
-      const isValid = variants[i].value === allVariants[i].value || variants[i].value === 'default'
-      if (variants[i].value === 'default') {
-        variantsConfig[0].type = 'default'
-        variantsConfig[0].options = ['default']
-      }
+      const isValid = variants[i].value === allVariants[i].value
+
       if (!isValid) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -220,7 +217,7 @@ export type ProductParamsType = z.infer<typeof ProductParamsSchema>
 export type ProductQueryType = z.infer<typeof ProductQuerySchema>
 export type GetProductsResType = z.infer<typeof GetProductsResSchema>
 export type GetAllProductsResType = z.infer<typeof GetAllProductsResSchema>
-export type GetProductDetailResType = z.infer<typeof GetProductDetailResSchema>
+export type ProductDetailType = z.infer<typeof ProductDetailSchema>
 export type UpsertVariantBodyType = z.infer<typeof UpsertVariantBodySchema>
 export type CreateProductBodyType = z.infer<typeof CreateProductBodySchema>
 export type UpdateProductBodyType = z.infer<typeof UpdateProductBodySchema>

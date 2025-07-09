@@ -5,13 +5,12 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Package, PlusCircle, RefreshCcw } from 'lucide-react'
+import { Package, RefreshCcw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
@@ -19,13 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner'
 import { handleError } from '@/lib/utils'
 import { useUploadImagesMutation } from '@/queries/useMedia'
-import { useCreateProductMutation, useProductDetailQuery, useUpdateProductMutation } from '@/queries/useManageProduct'
+import { useProductDetailQuery, useUpdateProductMutation } from '@/queries/useManageProduct'
 import ImageUpload from '@/components/ImageUpload'
-import {
-  UpdateProductBodySchema,
-  type CreateProductBodyType,
-  type UpdateProductBodyType
-} from '@/schemaValidations/product.schema'
+import { UpdateProductBodySchema, type UpdateProductBodyType } from '@/schemaValidations/product.schema'
 import { useAllCategoriesQuery } from '@/queries/useCategory'
 import { useAllTagsQuery } from '@/queries/useTag'
 import { MultiAsyncSelect } from '@/components/MultiAsyncSelect'
@@ -94,7 +89,7 @@ export default function EditProduct({
           }
         ],
         categories: categories.map((category) => category.id),
-        variants: variants || []
+        variants: variants
       })
       setFiles(images || [])
     }
@@ -155,7 +150,6 @@ export default function EditProduct({
       reset()
       toast.success('Sửa sản phẩm thành công')
     } catch (error) {
-      console.log(error)
       handleError(error, form.setError)
     }
   }
@@ -352,6 +346,189 @@ export default function EditProduct({
                       <Label className='text-sm font-medium'>Danh sách biến thể</Label>
                       <div className='col-span-3 w-full space-y-2 '>
                         <VariantsList
+                          imagesExists={productDetailQuery.data?.data.images || []}
+                          variantsInDB={productDetailQuery.data?.data.variants || []}
+                          variantsConfig={variantsConfig}
+                          variants={field.value}
+                          setVariants={field.onChange}
+                        />
+                        <div>
+                          <FormMessage />
+                        </div>
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+            {/* <div className='grid gap-4 py-4'>
+              <FormField
+                control={form.control}
+                name='images'
+                render={() => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='name'>Ảnh minh họa</Label>
+                      <div className='col-span-3 w-full space-y-2'>
+                        <ImageUpload files={files} setFiles={setFiles} />
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='name'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='name'>Tên sản phẩm</Label>
+                      <div className='col-span-3 w-full space-y-2'>
+                        <Input id='name' className='w-full' {...field} />
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='status'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='status'>Trạng thái</Label>
+                      <div className='col-span-3 w-full space-y-2'>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                          <FormControl id='status'>
+                            <SelectTrigger className='w-[50%]'>
+                              <SelectValue placeholder='Chọn trạng thái' />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {ProductStatusValues.map((val) => (
+                              <SelectItem key={val} value={val}>
+                                {val}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='categories'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='categories'>Danh mục</Label>
+                      <div className='col-span-3 w-full space-y-2'>
+                        <MultiAsyncSelect
+                          id='categories'
+                          placeholder='Chọn danh mục'
+                          options={filteredCategories.map((category) => ({
+                            label: category.name,
+                            value: category.id.toString()
+                          }))}
+                          defaultValue={categoriesWatch ? categoriesWatch.map((id) => id.toString()) : []}
+                          onValueChange={field.onChange}
+                          className='w-full shadow-sm scroll-auto'
+                          onSearch={(e) => {
+                            const categoriesByName = categories.filter((category) =>
+                              category.name.toLowerCase().includes(e.toLowerCase())
+                            )
+                            setFilteredCategories(categoriesByName)
+                          }}
+                          async
+                        />
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='tags'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='tags'>Thẻ</Label>
+                      <div className='col-span-3 w-full space-y-2'>
+                        <MultiAsyncSelect
+                          id='tags'
+                          placeholder='Chọn thẻ'
+                          maxCount={4}
+                          options={filteredTags.map((category) => ({
+                            label: category.name,
+                            value: category.id.toString()
+                          }))}
+                          defaultValue={tagsWatch ? tagsWatch.map((id) => id.toString()) : []}
+                          onValueChange={field.onChange}
+                          className='w-full shadow-sm scroll-auto'
+                          onSearch={(e) => {
+                            const tagsByName = tags.filter((tag) => tag.name.toLowerCase().includes(e.toLowerCase()))
+                            setFilteredTags(tagsByName)
+                          }}
+                          async
+                        />
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='description'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='description'>Mô tả sản phẩm</Label>
+                      <div className='col-span-3 w-full space-y-2 '>
+                        <TinyEditor value={field.value} onChange={field.onChange} />
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <Separator />
+              <FormField
+                control={form.control}
+                name='variantsConfig'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='variantsConfig'>Tạo biến thể</Label>
+                      <div className='col-span-3 w-full space-y-2 '>
+                        <VariantsConfig variantsConfig={field.value} setVariantsConfig={field.onChange} />
+                        <div>
+                          <FormMessage />
+                        </div>
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <Separator />
+              <FormField
+                control={form.control}
+                name='variants'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label className='text-sm font-medium'>Danh sách biến thể</Label>
+                      <div className='col-span-3 w-full space-y-2 '>
+                        <VariantsList
+                          imagesExists={productDetailQuery.data?.data.images || []}
                           variantsConfig={variantsConfig}
                           variantsInDB={productDetailQuery.data?.data.variants || []}
                           variants={field.value}
@@ -365,36 +542,10 @@ export default function EditProduct({
                   </FormItem>
                 )}
               />
-            </div>
+            </div> */}
           </form>
         </Form>
         <DialogFooter className='flex items-center gap-4'>
-          <div className='flex items-center justify-between px-4 py-2 bg-blue-100 rounded-lg gap-4'>
-            <div className='flex items-center gap-2'>
-              <Package className='w-5 h-5 text-blue-600' />
-              <span className='font-medium text-gray-900'>Tổng: {form.getValues('variants').length} biến thể</span>
-            </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    className='flex items-center gap-2 cursor-pointer'
-                    onClick={() => {
-                      form.setValue('variantsConfig', variantsConfig)
-                    }}
-                  >
-                    <RefreshCcw />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Tạo lại danh sách Variants theo bộ cấu hình</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
           <Button type='submit' form='edit-product-form'>
             Cập nhật
           </Button>

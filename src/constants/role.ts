@@ -5,3 +5,7 @@ export const RoleName = {
   Client: 'Client',
   Guest: 'Guest'
 } as const
+
+export const RoleNameValues = Object.values(RoleName)
+
+export type RoleNameType = (typeof RoleNameValues)[number]
