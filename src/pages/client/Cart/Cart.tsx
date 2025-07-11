@@ -171,7 +171,10 @@ export default function Cart() {
                                   id: item.variant.product.id
                                 })}`}
                               >
-                                <img alt={item.variant.product.name} src={item.variant.product.images[0]} />
+                                <img
+                                  alt={item.variant.product.name}
+                                  src={item.variant.thumbnail || item.variant.product.images[0] || Config.ImageBaseUrl}
+                                />
                               </Link>
                               <div className='flex-grow px-2 pt-1 pb-2'>
                                 <Link

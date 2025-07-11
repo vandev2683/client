@@ -828,8 +828,8 @@ export default function Checkout() {
                       {orderItems.map((item) => (
                         <div key={item.id} className='flex items-center space-x-4 py-4 border-b last:border-b-0'>
                           <img
-                            src={item.variant.product.images[0] || Config.ImageBaseUrl}
-                            alt={item.variant.product.name}
+                            src={item.variant.thumbnail || item.variant.product.images[0] || Config.ImageBaseUrl}
+                            alt={item.variant.value}
                             className='w-16 h-16 object-cover rounded-lg bg-gray-100'
                           />
                           <div className='flex-1'>

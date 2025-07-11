@@ -109,7 +109,7 @@ export const removeVietnameseAccents = (str: string): string => {
 }
 
 export const formatDateTimeToLocaleString = (date: string | Date) => {
-  return format(date instanceof Date ? date : new Date(date), 'HH:mm dd/MM/yyyy')
+  return format(date instanceof Date ? date : new Date(date), 'HH:mm, dd/MM/yyyy')
 }
 
 export const getFirstNameClient = (name: string) => {

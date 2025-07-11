@@ -22,6 +22,10 @@ import ProductDetail from './pages/client/ProductDetail'
 import Cart from './pages/client/Cart'
 import Checkout from './pages/client/Checkout'
 import PaymentCallback from './pages/client/PaymentCallback'
+import ProfileLayout from './pages/client/Profile'
+import Information from './pages/client/Profile/pages/Information'
+import ChangePassword from './pages/client/Profile/pages/ChangePassword'
+import OrderHistory from './pages/client/Profile/pages/OrderHistory'
 
 const Dashboard = () => <div>Dashboard Page - Sẽ được triển khai sau</div>
 const Bookings = () => <div>Bookings Page - Sẽ được triển khai sau</div>
@@ -125,6 +129,28 @@ export default function useRouteElements() {
             {
               path: 'checkout',
               element: <Checkout />
+            },
+            {
+              path: 'profile',
+              element: <ProfileLayout />,
+              children: [
+                {
+                  path: '',
+                  element: <Information />
+                },
+                {
+                  path: 'change-password',
+                  element: <ChangePassword />
+                },
+                {
+                  path: 'orders-history/online',
+                  element: <OrderHistory orderType='Delivery' />
+                },
+                {
+                  path: 'orders-history/dine-in',
+                  element: <OrderHistory orderType='DineIn' />
+                }
+              ]
             }
           ]
         },

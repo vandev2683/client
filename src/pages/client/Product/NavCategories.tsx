@@ -11,7 +11,6 @@ import { useQuery } from '@/hooks/useQuery'
 
 export default function FoodCategoryNav() {
   const query = useQuery()
-  const categoryId = query.get('category') ? Number(getIdByNameId(query.get('category') as string)) : undefined
   const [searchParams, setSearchParams] = useSearchParams()
 
   const categoriesQuery = useAllCategoriesQuery()
@@ -27,8 +26,14 @@ export default function FoodCategoryNav() {
   const [totalPages, setTotalPages] = useState(Math.ceil(parentCategories.length))
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Tính toán categoryId từ query parameters
+  const categoryId = query.get('category') ? Number(getIdByNameId(query.get('category') as string)) : undefined
+
   useEffect(() => {
-    if (!categoryId) return
+    if (!categoryId) {
+      setSelectedCategory(null)
+      return
+    }
     const selected = parentCategories.find((category) => category.id === categoryId)
     if (selected) {
       setSelectedCategory(selected)

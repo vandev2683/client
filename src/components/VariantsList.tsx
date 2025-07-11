@@ -240,7 +240,7 @@ export default function VariantsList({
                         )}
                       </div>
                       <div>
-                        <p className='text-gray-900 flex gap-1 max-w-[200px]'>
+                        <p className=' flex gap-1 max-w-[200px]'>
                           <span>{index + 1}:</span>
                           <span className='truncate' title={variant.value}>
                             {variant.value}

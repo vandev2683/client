@@ -1,8 +1,14 @@
 import { OrderStatus, OrderType } from '@/constants/order'
-import { PaymentMethod, PaymentStatus } from '@/constants/payment'
+import { PaymentMethod } from '@/constants/payment'
 import { z } from 'zod'
 import { PaymentSchema } from './payment.schema'
 import { CartItemDetailSchema } from './cart.schema'
+import { UserSchema } from './user.schema'
+import { AddressWithLocationSchema } from './address.schema'
+import { TableSchema } from './table.schema'
+import { BookingSchema } from './booking.schema'
+import { CouponSchema } from './coupon.schema'
+import { ProductSchema, VariantSchema } from './product.schema'
 
 export const OrderSchema = z.object({
   id: z.number(),
@@ -55,6 +61,23 @@ export const CreateOrderResSchema = z.object({
   paymentUrl: z.string().optional()
 })
 
+export const GetOrderDetailResSchema = OrderSchema.extend({
+  orderItems: z.array(
+    OrderItemSchema.extend({
+      variant: VariantSchema.extend({
+        product: ProductSchema
+      })
+    })
+  ),
+  user: UserSchema.omit({ totpSecret: true, password: true }).nullable(),
+  deliveryAddress: AddressWithLocationSchema.nullable(),
+  table: z.lazy(() => TableSchema).nullable(),
+  booking: BookingSchema.nullable(),
+  coupon: CouponSchema.nullable(),
+  handler: UserSchema.omit({ totpSecret: true, password: true }).nullable()
+})
+
 export type OrderItemType = z.infer<typeof OrderItemSchema>
 export type CreateOnlineOrderBodyType = z.infer<typeof CreateOnlineOrderBodySchema>
 export type CreateOrderResType = z.infer<typeof CreateOrderResSchema>
+export type GetOrderDetailResType = z.infer<typeof GetOrderDetailResSchema>
