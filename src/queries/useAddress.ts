@@ -1,11 +1,12 @@
 import addressApis from '@/apis/address'
-import type { AddressType, CreateAddressBodyType } from '@/schemaValidations/address.schema'
 import type { PaginationQueryType } from '@/schemaValidations/request.schema'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+const BASE_KEY = 'addresses'
+
 export const useAddressesQuery = (query: PaginationQueryType) => {
   return useQuery({
-    queryKey: ['addresses'],
+    queryKey: [BASE_KEY],
     queryFn: () => addressApis.list(query),
     placeholderData: keepPreviousData
   })
@@ -13,7 +14,7 @@ export const useAddressesQuery = (query: PaginationQueryType) => {
 
 export const useAllAddressesQuery = () => {
   return useQuery({
-    queryKey: ['addresses'],
+    queryKey: [BASE_KEY],
     queryFn: addressApis.findAll,
     placeholderData: keepPreviousData
   })
@@ -21,7 +22,7 @@ export const useAllAddressesQuery = () => {
 
 export const useAddressDetailQuery = (addressId: number | undefined) => {
   return useQuery({
-    queryKey: ['addresses', addressId],
+    queryKey: [BASE_KEY, addressId],
     queryFn: () => addressApis.findDetail(addressId as number),
     enabled: addressId !== undefined && addressId > 0
   })
@@ -32,7 +33,7 @@ export const useCreateAddressMutation = () => {
   return useMutation({
     mutationFn: addressApis.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['addresses'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -42,17 +43,17 @@ export const useUpdateAddressMutation = () => {
   return useMutation({
     mutationFn: addressApis.update,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['addresses'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
 
-export const useChangeDefaultAddressMutation = () => {
+export const useChangeAddressDefaultMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: addressApis.changeDefault,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['addresses'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -62,7 +63,7 @@ export const useDeleteAddressMutation = () => {
   return useMutation({
     mutationFn: addressApis.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['addresses'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }

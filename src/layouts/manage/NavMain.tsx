@@ -9,7 +9,7 @@ import {
   ShieldQuestionMark,
   TicketPercent
 } from 'lucide-react'
-import { SidebarGroup, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider } from '@/components/ui/sidebar'
+import { SidebarGroup, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
 import { Link, useLocation } from 'react-router'
 import { cn } from '@/lib/utils'
 
@@ -65,25 +65,23 @@ const manageItems = [
 export function NavMain() {
   const pathname = useLocation().pathname
   return (
-    <SidebarProvider>
-      <SidebarGroup>
-        <SidebarMenu>
-          {manageItems.map((item) => {
-            const isActive = pathname.startsWith(item.href)
+    <SidebarGroup>
+      <SidebarMenu>
+        {manageItems.map((item) => {
+          const isActive = pathname.startsWith(item.href)
 
-            return (
-              <SidebarMenuItem key={item.title} className='mb-1'>
-                <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link to={item.href} className={cn(isActive && 'font-bold bg-sidebar-primary/20')}>
-                    <item.Icon />
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )
-          })}
-        </SidebarMenu>
-      </SidebarGroup>
-    </SidebarProvider>
+          return (
+            <SidebarMenuItem key={item.title} className='mb-1'>
+              <SidebarMenuButton asChild tooltip={item.title}>
+                <Link to={item.href} className={cn(isActive && 'font-bold bg-sidebar-primary/20')}>
+                  <item.Icon />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )
+        })}
+      </SidebarMenu>
+    </SidebarGroup>
   )
 }

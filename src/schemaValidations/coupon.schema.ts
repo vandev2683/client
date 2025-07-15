@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 export const CouponSchema = z.object({
   id: z.number(),
-  code: z.string().min(1).max(500),
+  code: z.string().min(1, 'Mã giảm giá là bắt buộc').max(500),
   description: z.string(),
   discountType: z.nativeEnum(CouponDiscountType),
   discountValue: z.coerce.number().positive(),
@@ -14,6 +14,8 @@ export const CouponSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date()
 })
+
+export const CouponDetailSchema = CouponSchema
 
 export const CouponParamsSchema = z.object({
   couponId: z.coerce.number().int().positive()
@@ -47,39 +49,26 @@ export const CreateCouponBodySchema = CouponSchema.pick({
     if (discountType === 'Percent' && (discountValue < 0 || discountValue > 100)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Giá trị giảm giá phần trăm phải nằm trong khoảng từ 0 đến 100.',
+        message: 'Giá trị giảm giá theo phần trăm phải nằm trong khoảng từ 0% đến 100%.',
         path: ['discountValue']
       })
     } else if (discountType === 'Amount' && discountValue <= 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Giá trị giảm giá tiền tệ phải lớn hơn 0.',
+        message: 'Giá trị giảm giá theo tiền tệ phải lớn hơn 0₫.',
         path: ['discountValue']
       })
     }
   })
 
-export const UpdateCouponBodySchema = CreateCouponBodySchema.superRefine(({ discountType, discountValue }, ctx) => {
-  if (discountType === 'Percent' && (discountValue < 0 || discountValue > 100)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Giá trị giảm giá phần trăm phải nằm trong khoảng từ 0 đến 100.',
-      path: ['discountValue']
-    })
-  } else if (discountType === 'Amount' && discountValue <= 0) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Giá trị giảm giá tiền tệ phải lớn hơn 0.',
-      path: ['discountValue']
-    })
-  }
-})
+export const UpdateCouponBodySchema = CreateCouponBodySchema
 
 export const ChangeCouponStatusBodySchema = CouponSchema.pick({
   isActive: true
 }).strict()
 
 export type CouponType = z.infer<typeof CouponSchema>
+export type CouponDetailType = z.infer<typeof CouponDetailSchema>
 export type CouponParamsType = z.infer<typeof CouponParamsSchema>
 export type GetCouponsResType = z.infer<typeof GetCouponsResSchema>
 export type GetAllCouponsResType = z.infer<typeof GetAllCouponsResSchema>

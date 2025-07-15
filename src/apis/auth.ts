@@ -15,7 +15,7 @@ const BASE_URL = '/auth'
 
 const authApis = {
   sendOTP(body: SendOTPBodyType) {
-    return http.post<MessageResType>(`${BASE_URL}/otp`, body)
+    return http.post<MessageResType>(`${BASE_URL}/send-otp`, body)
   },
 
   register(body: RegisterBodyType) {
@@ -26,16 +26,16 @@ const authApis = {
     return http.post<LoginResType>(`${BASE_URL}/login`, body)
   },
 
-  getGoogleLink() {
-    return http.get<GoogleAuthResType>(`${BASE_URL}/google-link`)
-  },
-
   logout(body: LogoutBodyType) {
     return http.post<MessageResType>(`${BASE_URL}/logout`, body)
   },
 
   forgotPassword(body: ForgotPasswordBodyType) {
     return http.post<MessageResType>(`${BASE_URL}/forgot-password`, body)
+  },
+
+  getGoogleLink() {
+    return http.get<GoogleAuthResType>(`${BASE_URL}/google-link`)
   }
 }
 

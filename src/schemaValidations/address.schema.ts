@@ -18,7 +18,7 @@ export const AddressSchema = z.object({
   updatedAt: z.date()
 })
 
-export const AddressWithLocationSchema = AddressSchema.extend({
+export const AddressDetailSchema = AddressSchema.extend({
   province: ProvinceSchema,
   district: DistrictSchema,
   ward: WardSchema
@@ -31,7 +31,7 @@ export const AddressParamsSchema = z
   .strict()
 
 export const GetAddressesResSchema = z.object({
-  data: z.array(AddressWithLocationSchema),
+  data: z.array(AddressDetailSchema),
   totalItems: z.number(),
   limit: z.number(),
   page: z.number(),
@@ -56,15 +56,15 @@ export const CreateAddressBodySchema = AddressSchema.pick({
 
 export const UpdateAddressBodySchema = CreateAddressBodySchema.strict()
 
-export const ChangeDefaultAddressBodySchema = AddressSchema.pick({
+export const ChangeAddressDefaultBodySchema = AddressSchema.pick({
   isDefault: true
 }).strict()
 
 export type AddressType = z.infer<typeof AddressSchema>
-export type AddressWithLocationType = z.infer<typeof AddressWithLocationSchema>
+export type AddressDetailType = z.infer<typeof AddressDetailSchema>
 export type AddressParamsType = z.infer<typeof AddressParamsSchema>
 export type GetAddressesResType = z.infer<typeof GetAddressesResSchema>
 export type GetAllAddressesResType = z.infer<typeof GetAllAddressesResSchema>
 export type CreateAddressBodyType = z.infer<typeof CreateAddressBodySchema>
 export type UpdateAddressBodyType = z.infer<typeof UpdateAddressBodySchema>
-export type ChangeDefaultAddressBodyType = z.infer<typeof ChangeDefaultAddressBodySchema>
+export type ChangeAddressDefaultBodyType = z.infer<typeof ChangeAddressDefaultBodySchema>

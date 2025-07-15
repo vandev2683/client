@@ -2,9 +2,11 @@ import categoryApis from '@/apis/category'
 import type { PaginationQueryType } from '@/schemaValidations/request.schema'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+const BASE_KEY = 'categories'
+
 export const useCategoriesQuery = (query: PaginationQueryType) => {
   return useQuery({
-    queryKey: ['categories'],
+    queryKey: [BASE_KEY],
     queryFn: () => categoryApis.list(query),
     placeholderData: keepPreviousData
   })
@@ -12,7 +14,7 @@ export const useCategoriesQuery = (query: PaginationQueryType) => {
 
 export const useAllCategoriesQuery = () => {
   return useQuery({
-    queryKey: ['categories'],
+    queryKey: [BASE_KEY],
     queryFn: categoryApis.findAll,
     placeholderData: keepPreviousData
   })
@@ -20,7 +22,7 @@ export const useAllCategoriesQuery = () => {
 
 export const useCategoryDetailQuery = (categoryId: number | undefined) => {
   return useQuery({
-    queryKey: ['categories', categoryId],
+    queryKey: [BASE_KEY, categoryId],
     queryFn: () => categoryApis.findDetail(categoryId as number),
     enabled: categoryId !== undefined && categoryId > 0
   })
@@ -31,7 +33,7 @@ export const useCreateCategoryMutation = () => {
   return useMutation({
     mutationFn: categoryApis.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -41,7 +43,7 @@ export const useUpdateCategoryMutation = () => {
   return useMutation({
     mutationFn: categoryApis.update,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -51,7 +53,7 @@ export const useDeleteCategoryMutation = () => {
   return useMutation({
     mutationFn: categoryApis.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }

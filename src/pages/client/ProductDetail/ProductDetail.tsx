@@ -1,16 +1,20 @@
 import QuantityController from '@/components/QuantityController'
-import { formatCurrency, getIdByNameId, handleError } from '@/lib/utils'
+import { formatCurrency, formatDateTimeToLocaleString, getIdByNameId, handleError } from '@/lib/utils'
 import { useProductDetailQuery } from '@/queries/useManageProduct'
 import type { ProductType, VariantType } from '@/schemaValidations/product.schema'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Star } from 'lucide-react'
 import { TagType } from '@/constants/tag'
 import Config from '@/constants/config'
 import { ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAddToCartMutation } from '@/queries/useCart'
 import { toast } from 'sonner'
+import { useReviewsByProductQuery } from '@/queries/useReview'
 
 export default function ProductDetail() {
   const params = useParams()
@@ -185,6 +189,35 @@ export default function ProductDetail() {
   const handleBuyNow = () => {
     if (!validateVariantSelection()) return
     // Implement buy now functionality
+  }
+
+  const reviewsQuery = useReviewsByProductQuery(Number(productId))
+  const reviews = reviewsQuery.data?.data.data || []
+  const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length || 0
+  const renderStars = ({ rating, sizeIcon = 5 }: { rating: number; sizeIcon?: number }) => {
+    return Array.from({ length: 5 }, (_, index) => {
+      const starValue = index + 1
+      const isFilled = starValue <= rating
+      const isPartiallyFilled = rating > index && rating < starValue
+
+      return (
+        <button key={index} type='button' className='relative rounded'>
+          <Star
+            className={`w-${sizeIcon} h-${sizeIcon} transition-colors duration-150 ${
+              isFilled ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'
+            }`}
+          />
+          {isPartiallyFilled && (
+            <Star
+              className={`absolute top-0 left-0 w-${sizeIcon} h-${sizeIcon} fill-yellow-400 text-yellow-400`}
+              style={{
+                clipPath: `inset(0 ${100 - (rating - index) * 100}% 0 0)`
+              }}
+            />
+          )}
+        </button>
+      )
+    })
   }
 
   if (!product) return <div>Loading...</div>
@@ -368,17 +401,65 @@ export default function ProductDetail() {
       </div>
       <div className='mt-4'>
         <div className='max-w-6xl mx-auto px-4'>
-          <div className=' bg-white p-4 shadow rounded-lg'>
-            <div className='rounded bg-gray-50 p-4 text-lg capitalize text-slate-700'>Mô tả sản phẩm</div>
-            <div className='mx-4 mb-4 text-sm leading-loose'>
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: product.description || 'Chưa có mô tả sản phẩm'
-                }}
-                className='whitespace-pre-line'
-              />
-            </div>
-          </div>
+          <Tabs defaultValue='description' className='w-full gap-0'>
+            <TabsList className='grid w-[50%] grid-cols-2 bg-gray-100 border border-gray-200 p-0 rounded-none rounded-tl-lg rounded-tr-lg'>
+              <TabsTrigger
+                value='description'
+                className='data-[state=active]:bg-white rounded-none rounded-tl-lg transition-all'
+              >
+                Mô tả
+              </TabsTrigger>
+              <TabsTrigger
+                value='reviews'
+                className='data-[state=active]:bg-white rounded-none rounded-tr-lg transition-all'
+              >
+                Đánh giá
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value='description'>
+              <Card className='rounded-none rounded-bl-lg rounded-br-lg'>
+                <CardHeader>
+                  <CardTitle className='text-lg font-medium text-gray-700'>Mô Tả Sản Phẩm</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p dangerouslySetInnerHTML={{ __html: product.description }} className='whitespace-pre-line' />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value='reviews'>
+              <Card className='rounded-none rounded-bl-lg rounded-br-lg'>
+                <CardHeader>
+                  <CardTitle className='text-lg font-medium text-gray-700'>Đánh Giá Khách Hàng</CardTitle>
+                  <div className='flex items-center gap-2 mb-4'>
+                    <div className='flex'>{renderStars({ rating: totalRating })}</div>
+                    <span className='text-sm text-gray-600'>
+                      ({totalRating}/5 - {reviews.length} đánh giá)
+                    </span>
+                  </div>
+                </CardHeader>
+                <CardContent className='space-y-4'>
+                  <div className='space-y-3'>
+                    {reviews &&
+                      reviews.length > 0 &&
+                      reviews.map((review) => (
+                        <div key={review.id} className='pb-3'>
+                          <div className='flex items-center gap-2 mb-1'>
+                            <p className='font-medium text-sm'>{review.user.name}</p>
+                            <div className='flex'>{renderStars({ rating: review.rating, sizeIcon: 3 })}</div>
+                            <span className='text-xs text-gray-400'>
+                              {formatDateTimeToLocaleString(review.updatedAt)}
+                            </span>
+                          </div>
+                          <p className='text-sm text-gray-600'>{review.content}</p>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
       <Dialog open={isOpenPreview} onOpenChange={setIsOpenPreview}>

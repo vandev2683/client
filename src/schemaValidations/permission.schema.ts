@@ -4,13 +4,15 @@ import { z } from 'zod'
 export const PermissionSchema = z.object({
   id: z.number(),
   name: z.string().max(500),
-  description: z.string().default(''),
+  description: z.string(),
   path: z.string().max(1000),
   method: z.nativeEnum(HTTPMethod),
-  module: z.string().max(500).default(''),
+  module: z.string().max(500),
   createdAt: z.date(),
   updatedAt: z.date()
 })
+
+export const PermissionDetailSchema = PermissionSchema
 
 export const PermissionParamsSchema = z
   .object({
@@ -42,6 +44,7 @@ export const CreatePermissionBodySchema = PermissionSchema.pick({
 export const UpdatePermissionBodySchema = CreatePermissionBodySchema
 
 export type PermissionType = z.infer<typeof PermissionSchema>
+export type PermissionDetailType = z.infer<typeof PermissionDetailSchema>
 export type PermissionParamsType = z.infer<typeof PermissionParamsSchema>
 export type GetPermissionsResType = z.infer<typeof GetPermissionsResSchema>
 export type GetAllPermissionsResType = z.infer<typeof GetAllPermissionsResSchema>

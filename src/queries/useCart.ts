@@ -1,9 +1,20 @@
 import cartApis from '@/apis/cart'
+import type { PaginationQueryType } from '@/schemaValidations/request.schema'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+
+const BASE_KEY = 'cart'
+
+export const useCartItemsQuery = (query: PaginationQueryType) => {
+  return useQuery({
+    queryKey: [BASE_KEY],
+    queryFn: () => cartApis.list(query),
+    placeholderData: keepPreviousData
+  })
+}
 
 export const useAllCartItemsQuery = () => {
   return useQuery({
-    queryKey: ['cart'],
+    queryKey: [BASE_KEY],
     queryFn: cartApis.findAll,
     placeholderData: keepPreviousData
   })
@@ -14,27 +25,27 @@ export const useAddToCartMutation = () => {
   return useMutation({
     mutationFn: cartApis.addToCart,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
 
-export const useUpdateCartItemMutation = () => {
+export const useUpdateCartMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: cartApis.updateCartItem,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
 
-export const useDeleteCartItemMutation = () => {
+export const useDeleteCartMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: cartApis.deleteCartItem,
+    mutationFn: cartApis.deleteCartItems,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }

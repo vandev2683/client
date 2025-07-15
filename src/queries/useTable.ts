@@ -2,9 +2,11 @@ import tableApis from '@/apis/table'
 import type { PaginationQueryType } from '@/schemaValidations/request.schema'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+const BASE_KEY = 'tables'
+
 export const useTablesQuery = (query: PaginationQueryType) => {
   return useQuery({
-    queryKey: ['tables'],
+    queryKey: [BASE_KEY],
     queryFn: () => tableApis.list(query),
     placeholderData: keepPreviousData
   })
@@ -12,7 +14,7 @@ export const useTablesQuery = (query: PaginationQueryType) => {
 
 export const useAllTablesQuery = () => {
   return useQuery({
-    queryKey: ['tables'],
+    queryKey: [BASE_KEY],
     queryFn: tableApis.findAll,
     placeholderData: keepPreviousData
   })
@@ -20,7 +22,7 @@ export const useAllTablesQuery = () => {
 
 export const useTableDetailQuery = (tableId: number | undefined) => {
   return useQuery({
-    queryKey: ['tables', tableId],
+    queryKey: [BASE_KEY, tableId],
     queryFn: () => tableApis.findDetail(tableId as number),
     enabled: tableId !== undefined && tableId > 0
   })
@@ -31,7 +33,7 @@ export const useCreateTableMutation = () => {
   return useMutation({
     mutationFn: tableApis.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tables'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -41,7 +43,7 @@ export const useUpdateTableMutation = () => {
   return useMutation({
     mutationFn: tableApis.update,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tables'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -51,7 +53,7 @@ export const useChangeTableStatusMutation = () => {
   return useMutation({
     mutationFn: tableApis.changeStatus,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tables'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -61,7 +63,7 @@ export const useDeleteTableMutation = () => {
   return useMutation({
     mutationFn: tableApis.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tables'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }

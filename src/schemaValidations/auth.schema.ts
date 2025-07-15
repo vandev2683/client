@@ -1,7 +1,6 @@
 import { VerificationCode } from '@/constants/auth'
 import { z } from 'zod'
-import { UserSchema } from './user.schema'
-import { RoleSchema } from './role.schema'
+import { UserDetailSchema, UserSchema } from './user.schema'
 
 export const VerificationCodeSchema = z.object({
   id: z.number(),
@@ -11,6 +10,13 @@ export const VerificationCodeSchema = z.object({
   expiresAt: z.date(),
   createdAt: z.date()
 })
+
+export const CreateVerificationCodeSchema = VerificationCodeSchema.pick({
+  email: true,
+  code: true,
+  type: true,
+  expiresAt: true
+}).strict()
 
 export const SendOTPBodySchema = VerificationCodeSchema.pick({
   email: true,
@@ -63,28 +69,19 @@ export const RegisterBodySchema = UserSchema.pick({
     }
   })
 
+export const RegisterResSchema = UserDetailSchema.extend({
+  tokens: z.object({
+    accessToken: z.string(),
+    refreshToken: z.string()
+  })
+})
+
 export const LoginBodySchema = UserSchema.pick({
   email: true,
   password: true
 }).strict()
 
-export const LoginResSchema = z.object({
-  tokens: z.object({
-    accessToken: z.string(),
-    refreshToken: z.string()
-  }),
-  user: UserSchema.omit({
-    password: true,
-    totpSecret: true
-  }).extend({
-    role: RoleSchema.pick({
-      id: true,
-      name: true
-    })
-  })
-})
-
-export const RegisterResSchema = LoginResSchema
+export const LoginResSchema = RegisterResSchema
 
 export const LogoutBodySchema = RefreshTokenBodySchema
 
@@ -112,17 +109,18 @@ export const GoogleAuthResSchema = z.object({
 })
 
 export type VerificationCodeType = z.infer<typeof VerificationCodeSchema>
+export type CreateVerificationCodeType = z.infer<typeof CreateVerificationCodeSchema>
+export type FindVerificationCodeType =
+  | { id: number }
+  | { email_code_type: Pick<VerificationCodeType, 'email' | 'code' | 'type'> }
 export type SendOTPBodyType = z.infer<typeof SendOTPBodySchema>
-
 export type CreateRefreshTokenType = z.infer<typeof CreateRefreshTokenSchema>
 export type RefreshTokenBodyType = z.infer<typeof RefreshTokenBodySchema>
 export type RefreshTokenResType = z.infer<typeof RefreshTokenResSchema>
-
 export type RegisterBodyType = z.infer<typeof RegisterBodySchema>
+export type RegisterResType = z.infer<typeof RegisterResSchema>
 export type LoginBodyType = z.infer<typeof LoginBodySchema>
 export type LoginResType = z.infer<typeof LoginResSchema>
-export type RegisterResType = z.infer<typeof RegisterResSchema>
 export type LogoutBodyType = z.infer<typeof LogoutBodySchema>
 export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>
-
 export type GoogleAuthResType = z.infer<typeof GoogleAuthResSchema>

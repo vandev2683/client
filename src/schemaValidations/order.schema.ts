@@ -4,11 +4,14 @@ import { z } from 'zod'
 import { PaymentSchema } from './payment.schema'
 import { CartItemDetailSchema } from './cart.schema'
 import { UserSchema } from './user.schema'
-import { AddressWithLocationSchema } from './address.schema'
 import { TableSchema } from './table.schema'
 import { BookingSchema } from './booking.schema'
 import { CouponSchema } from './coupon.schema'
 import { ProductSchema, VariantSchema } from './product.schema'
+import { PaginationQuerySchema } from './request.schema'
+import { ReviewSchema } from './review.schema'
+import { AddressDetailSchema } from './address.schema'
+import { MessageResSchema } from './response.schema'
 
 export const OrderSchema = z.object({
   id: z.number(),
@@ -34,7 +37,7 @@ export const OrderSchema = z.object({
 export const OrderItemSchema = z.object({
   id: z.number(),
   productName: z.string(),
-  thumbnail: z.string().optional(),
+  thumbnail: z.string().nullable(),
   variantValue: z.string(),
   quantity: z.number().int().positive(),
   price: z.number().nonnegative(),
@@ -43,6 +46,45 @@ export const OrderItemSchema = z.object({
   variantId: z.number().int().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
+})
+
+export const OrderDetailSchema = OrderSchema.extend({
+  orderItems: z.array(
+    OrderItemSchema.extend({
+      variant: VariantSchema.extend({
+        product: ProductSchema
+      })
+    })
+  ),
+  reviews: z.array(ReviewSchema),
+  user: UserSchema.omit({ totpSecret: true, password: true }).nullable(),
+  deliveryAddress: AddressDetailSchema.nullable(),
+  table: TableSchema.nullable(),
+  booking: BookingSchema.nullable(),
+  coupon: CouponSchema.nullable(),
+  handler: UserSchema.omit({ totpSecret: true, password: true }).nullable()
+})
+
+export const OrderParamsSchema = z.object({
+  orderId: z.coerce.number().int().positive()
+})
+
+export const OrderQuerySchema = PaginationQuerySchema.extend({
+  status: z.nativeEnum(OrderStatus).optional(),
+  orderType: z.nativeEnum(OrderType).optional()
+})
+
+export const GetOrdersResSchema = z.object({
+  data: z.array(OrderDetailSchema),
+  totalItems: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number()
+})
+
+export const GetAllOrdersResSchema = GetOrdersResSchema.pick({
+  data: true,
+  totalItems: true
 })
 
 export const CreateOnlineOrderBodySchema = OrderSchema.pick({
@@ -56,28 +98,21 @@ export const CreateOnlineOrderBodySchema = OrderSchema.pick({
   })
   .strict()
 
-export const CreateOrderResSchema = z.object({
-  message: z.string(),
+export const CreateOrderResSchema = MessageResSchema.extend({
   paymentUrl: z.string().optional()
 })
 
-export const GetOrderDetailResSchema = OrderSchema.extend({
-  orderItems: z.array(
-    OrderItemSchema.extend({
-      variant: VariantSchema.extend({
-        product: ProductSchema
-      })
-    })
-  ),
-  user: UserSchema.omit({ totpSecret: true, password: true }).nullable(),
-  deliveryAddress: AddressWithLocationSchema.nullable(),
-  table: z.lazy(() => TableSchema).nullable(),
-  booking: BookingSchema.nullable(),
-  coupon: CouponSchema.nullable(),
-  handler: UserSchema.omit({ totpSecret: true, password: true }).nullable()
-})
+export const ChangeOrderStatusBodySchema = OrderSchema.pick({
+  status: true
+}).strict()
 
 export type OrderItemType = z.infer<typeof OrderItemSchema>
+export type OrderType = z.infer<typeof OrderSchema>
+export type OrderDetailType = z.infer<typeof OrderDetailSchema>
+export type OrderParamsType = z.infer<typeof OrderParamsSchema>
+export type OrderQueryType = z.infer<typeof OrderQuerySchema>
+export type GetOrdersResType = z.infer<typeof GetOrdersResSchema>
+export type GetAllOrdersResType = z.infer<typeof GetAllOrdersResSchema>
 export type CreateOnlineOrderBodyType = z.infer<typeof CreateOnlineOrderBodySchema>
 export type CreateOrderResType = z.infer<typeof CreateOrderResSchema>
-export type GetOrderDetailResType = z.infer<typeof GetOrderDetailResSchema>
+export type ChangeOrderStatusBodyType = z.infer<typeof ChangeOrderStatusBodySchema>

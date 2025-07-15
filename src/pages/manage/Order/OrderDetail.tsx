@@ -1,10 +1,10 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { Package, Clock, UserPen } from 'lucide-react'
+import { Package, Clock, UserPen, Star } from 'lucide-react'
 import type { GetOrderDetailResType } from '@/schemaValidations/order.schema'
 import { OrderStatus } from '@/constants/order'
 import classNames from 'classnames'
@@ -12,17 +12,58 @@ import { formatCurrency, formatDateTimeToLocaleString } from '@/lib/utils'
 import { PaymentMethod } from '@/constants/payment'
 import Config from '@/constants/config'
 import { CouponDiscountType } from '@/constants/coupon'
-import OrderReview from './OrderReview'
+import { useOrderDetailQuery } from '@/queries/useOrder'
+import ChangeStatus from './ChangeStatus'
 
-export default function OrderDetail({ order, children }: { order: GetOrderDetailResType; children: ReactNode }) {
-  const [open, setOpen] = useState(false)
+export default function OrderDetail({
+  orderId,
+  setOrderId
+}: {
+  orderId?: number | undefined
+  setOrderId: (id: number | undefined) => void
+}) {
+  const orderDetailQuery = useOrderDetailQuery(orderId)
+  const order = orderDetailQuery.data?.data
+  console.log('Order Detail:', order)
+  if (!order) return null
+
   const productNameSet = new Set(order.orderItems.map((item) => item.productName))
+
+  const renderStars = ({ rating, sizeIcon = 5 }: { rating: number; sizeIcon?: number }) => {
+    return Array.from({ length: 5 }, (_, index) => {
+      const starValue = index + 1
+      const isFilled = starValue <= rating
+      const isPartiallyFilled = rating > index && rating < starValue
+
+      return (
+        <button key={index} type='button' className='relative rounded'>
+          <Star
+            className={`w-${sizeIcon} h-${sizeIcon} transition-colors duration-150 ${
+              isFilled ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'
+            }`}
+          />
+          {isPartiallyFilled && (
+            <Star
+              className={`absolute top-0 left-0 w-${sizeIcon} h-${sizeIcon} fill-yellow-400 text-yellow-400`}
+              style={{
+                clipPath: `inset(0 ${100 - (rating - index) * 100}% 0 0)`
+              }}
+            />
+          )}
+        </button>
+      )
+    })
+  }
 
   if (!order.user || !order.deliveryAddress)
     return <div className='text-red-500'>Không tìm thấy thông tin đơn hàng.</div>
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
+    <Dialog
+      open={Boolean(orderId)}
+      onOpenChange={() => {
+        setOrderId(undefined)
+      }}
+    >
       <DialogContent className='min-w-[55vw] min-h-[80vh] max-h-[100vh] overflow-y-auto'>
         <DialogHeader>
           <DialogTitle className='text-xl font-semibold'>Chi Tiết Đơn Hàng #{order.id}</DialogTitle>
@@ -73,22 +114,8 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
               <div className='p-4 border rounded-lg space-y-3'>
                 <div className='flex items-center justify-between'>
                   <span className='text-sm text-muted-foreground'>Trạng thái:</span>
-                  <span
-                    className={classNames('text-xs font-medium me-2 px-2.5 py-0.5 rounded-full', {
-                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300':
-                        order.status === OrderStatus.Pending,
-                      'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300':
-                        order.status === OrderStatus.Confirmed,
-                      'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300':
-                        order.status === OrderStatus.Completed,
-                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300':
-                        order.status === OrderStatus.OutForDelivery,
-                      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300':
-                        order.status === OrderStatus.Cancelled
-                    })}
-                  >
-                    {order.status}
-                  </span>
+
+                  <ChangeStatus order={order} />
                 </div>
                 <div className='flex items-center justify-between'>
                   <span className='text-sm text-muted-foreground'>Ngày đặt:</span>
@@ -113,14 +140,14 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
                 </div>
                 <div className='flex items-center justify-between'>
                   <span className='text-sm text-muted-foreground'>Tổng tiền:</span>
-                  <span className='text-lg font-bold text-primary'>{formatCurrency(order.totalAmount)}</span>
+                  <span className='text-sm font-bold text-primary'>{formatCurrency(order.totalAmount)}</span>
                 </div>
                 <div className='flex items-center justify-between'>
                   <div className='flex flex-col'>
                     <span className='text-sm text-muted-foreground'>Phí:</span>
                     <span className='text-sm text-muted-foreground'>({formatCurrency(30000)} Ship + 10% VAT)</span>
                   </div>
-                  <span className='text-lg font-bold text-primary'>{formatCurrency(order.feeAmount)}</span>
+                  <span className='text-sm font-bold text-primary'>{formatCurrency(order.feeAmount)}</span>
                 </div>
                 <div className='flex items-center justify-between'>
                   <span className='text-sm text-muted-foreground'>
@@ -129,7 +156,7 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
                       ? `(${order.coupon.discountType === CouponDiscountType.Amount ? `-${formatCurrency(order.coupon.discountValue)}` : `-${order.coupon.discountValue}%`})`
                       : ''}
                   </span>
-                  <span className='text-lg font-bold text-primary'>{formatCurrency(order.discountAmount)}</span>
+                  <span className='text-sm font-bold text-primary'>{formatCurrency(order.discountAmount)}</span>
                 </div>
                 <div className='flex items-center justify-between'>
                   <span className='text-sm text-muted-foreground'>Tổng tiền:</span>
@@ -157,7 +184,7 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
                 const firstItem = itemsForProduct[0]
 
                 return (
-                  <AccordionItem key={productName} value={productName} className='border rounded-lg px-4'>
+                  <AccordionItem key={productName} value={productName} className='border last:border-b rounded-lg px-4'>
                     <div className='flex items-center justify-between'>
                       <AccordionTrigger hasIcon={false}>
                         <div className='flex items-center gap-4 flex-1'>
@@ -174,11 +201,28 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
                           </div>
                         </div>
                       </AccordionTrigger>
-                      <OrderReview productId={firstItem.productId as number} orderId={order.id}>
-                        <Button variant='ghost' type='button' title='Chỉnh sửa đánh giá'>
-                          <UserPen className='w-5 h-5' />
-                        </Button>
-                      </OrderReview>
+                      {order.reviews.some((review) => review.productId === firstItem.productId) && (
+                        <div className='flex flex-col items-end gap-2'>
+                          <span className='text-yellow-500'>
+                            {renderStars({
+                              rating:
+                                order.reviews.find((review) => review.productId === firstItem.productId)?.rating || 0,
+                              sizeIcon: 4
+                            })}
+                          </span>
+                          {order.reviews.find((review) => review.productId === firstItem.productId)?.content && (
+                            <p
+                              className='text-sm text-gray-600 max-w-[350px] truncate'
+                              title={
+                                order.reviews.find((review) => review.productId === firstItem.productId)?.content || ''
+                              }
+                            >
+                              Đánh giá:{' '}
+                              {order.reviews.find((review) => review.productId === firstItem.productId)?.content || ''}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <AccordionContent className='pt-4'>
                       <div className='space-y-6'>

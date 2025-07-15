@@ -1,22 +1,40 @@
 import profileApis from '@/apis/profile'
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-export const useGetOrdersProfileQuery = () => {
+const BASE_KEY = 'profile'
+
+export const useProfileQuery = () => {
+  return useQuery({
+    queryKey: [BASE_KEY],
+    queryFn: profileApis.find,
+    placeholderData: keepPreviousData
+  })
+}
+
+export const useProfileOrdersQuery = () => {
   return useQuery({
     queryKey: ['profile-orders'],
-    queryFn: profileApis.getOrders,
+    queryFn: profileApis.findWithOrders,
     placeholderData: keepPreviousData
   })
 }
 
 export const useUpdateProfileMutation = () => {
+  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: profileApis.update
+    mutationFn: profileApis.update,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
+    }
   })
 }
 
-export const useChangePasswordMutation = () => {
+export const useChangeProfilePasswordMutation = () => {
+  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: profileApis.changePassword
+    mutationFn: profileApis.changePassword,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
+    }
   })
 }

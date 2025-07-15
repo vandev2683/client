@@ -4,39 +4,60 @@ import { PaginationQuerySchema } from './request.schema'
 import { OrderBy, SortBy } from '@/constants/common'
 import { CategorySchema } from './category.schema'
 import { TagSchema } from './tag.schema'
+import { ReviewDetailSchema } from './review.schema'
+
+export function generateVariants(variants: ProductVariantsType) {
+  // Hàm hỗ trợ để tạo tất cả tổ hợp
+  function getCombinations(arrays: string[][]): string[] {
+    return arrays.reduce((acc, curr) => acc.flatMap((x) => curr.map((y) => `${x}${x ? ' / ' : ''}${y}`)), [''])
+  }
+
+  // Lấy mảng các options từ variants
+  const options = variants.map((variant) => variant.options)
+
+  // Tạo tất cả tổ hợp
+  const combinations = getCombinations(options)
+
+  // Chuyển tổ hợp thành SKU objects
+  return combinations.map((value) => ({
+    value,
+    price: 0,
+    stock: 0,
+    thumbnail: null
+  }))
+}
 
 export const ProductVariantSchema = z.object({
   type: z.string().trim(),
   options: z.array(z.string().trim())
 })
 
-export const ProductVariantsSchema = z.array(ProductVariantSchema)
-// .superRefine((variants, ctx) => {
-//   for (let i = 0; i < variants.length; i++) {
-//     const variant = variants[i]
-//     // Kiểm tra các type có trùng lặp
-//     const typeIndex = variants.findIndex((v) => v.type.toLowerCase() === variant.type.toLowerCase())
-//     if (typeIndex !== i) {
-//       ctx.addIssue({
-//         code: z.ZodIssueCode.custom,
-//         message: `Type "${variant.type}" is duplicated. Please ensure each type is unique.`,
-//         path: ['options']
-//       })
-//     }
+export const ProductVariantsSchema = z.array(ProductVariantSchema).superRefine((variants, ctx) => {
+  for (let i = 0; i < variants.length; i++) {
+    const variant = variants[i]
+    // Kiểm tra các type có trùng lặp
+    const typeIndex = variants.findIndex((v) => v.type.toLowerCase() === variant.type.toLowerCase())
+    if (typeIndex !== i) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Loại "${variant.type}" bị trùng lặp. Vui lòng đảm bảo mỗi loại là duy nhất`,
+        path: ['variants']
+      })
+    }
 
-//     // Kiểm tra các options của type có trùng lặp
-//     const isDuplicateOption = variant.options.some((option, index) => {
-//       return variant.options.findIndex((o) => o.toLowerCase() === option.toLowerCase()) !== index
-//     })
-//     if (isDuplicateOption) {
-//       ctx.addIssue({
-//         code: z.ZodIssueCode.custom,
-//         message: `Options for type "${variant.type}" contain duplicates. Please ensure each option is unique.`,
-//         path: ['options']
-//       })
-//     }
-//   }
-// })
+    // Kiểm tra các options của type có trùng lặp
+    const isDuplicateOption = variant.options.some((option, index) => {
+      return variant.options.findIndex((o) => o.toLowerCase() === option.toLowerCase()) !== index
+    })
+    if (isDuplicateOption) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Các tùy chọn cho loại "${variant.type}" chứa các giá trị trùng lặp. Vui lòng đảm bảo mỗi tùy chọn là duy nhất`,
+        path: ['variants']
+      })
+    }
+  }
+})
 
 export const ProductSchema = z.object({
   id: z.number(),
@@ -61,26 +82,12 @@ export const VariantSchema = z.object({
   updatedAt: z.date()
 })
 
-export function generateVariants(variants: ProductVariantsType) {
-  // Hàm hỗ trợ để tạo tất cả tổ hợp
-  function getCombinations(arrays: string[][]): string[] {
-    return arrays.reduce((acc, curr) => acc.flatMap((x) => curr.map((y) => `${x}${x ? ' / ' : ''}${y}`)), [''])
-  }
-
-  // Lấy mảng các options từ variants
-  const options = variants.map((variant) => variant.options)
-
-  // Tạo tất cả tổ hợp
-  const combinations = getCombinations(options)
-
-  // Chuyển tổ hợp thành SKU objects
-  return combinations.map((value) => ({
-    value,
-    price: 0,
-    stock: 0,
-    thumbnail: null
-  }))
-}
+export const ProductDetailSchema = ProductSchema.extend({
+  variants: z.array(VariantSchema),
+  categories: z.array(CategorySchema),
+  tags: z.array(TagSchema),
+  reviews: z.array(ReviewDetailSchema)
+})
 
 export const ProductParamsSchema = z.object({
   productId: z.coerce.number().int().positive()
@@ -110,14 +117,8 @@ export const ProductQuerySchema = PaginationQuerySchema.extend({
   sortBy: z.nativeEnum(SortBy).default(SortBy.CreatedAt)
 })
 
-export const ProductDetailSchema = ProductSchema.extend({
-  variants: z.array(VariantSchema),
-  categories: z.array(CategorySchema),
-  tags: z.array(TagSchema)
-})
-
 export const GetProductsResSchema = z.object({
-  data: z.array(ProductDetailSchema),
+  data: z.array(ProductDetailSchema.omit({ reviews: true })),
   totalItems: z.number(),
   page: z.number(),
   limit: z.number(),
@@ -157,7 +158,7 @@ export const CreateProductBodySchema = ProductSchema.pick({
       if (typeIndex !== i) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Type "${variant.type}" is duplicated. Please ensure each type is unique.`,
+          message: `Loại "${variant.type}" bị trùng lặp. Vui lòng đảm bảo mỗi loại là duy nhất`,
           path: ['variantsConfig']
         })
       }
@@ -169,7 +170,7 @@ export const CreateProductBodySchema = ProductSchema.pick({
       if (isDuplicateOption) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Options for type "${variant.type}" contain duplicates. Please ensure each option is unique.`,
+          message: `Các tùy chọn cho loại "${variant.type}" chứa các giá trị trùng lặp. Vui lòng đảm bảo mỗi tùy chọn là duy nhất`,
           path: ['variantsConfig']
         })
       }
@@ -196,7 +197,7 @@ export const CreateProductBodySchema = ProductSchema.pick({
       if (!isValid) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Variant value "${variants[i].value}" does not match the expected value "${allVariants[i].value}". Please check again.`,
+          message: `Giá trị của biến thể "${variants[i].value}" không khớp với giá trị mong đợi "${allVariants[i].value}". Vui lòng kiểm tra lại.`,
           path: ['variants']
         })
       }
@@ -213,11 +214,11 @@ export type ProductVariantType = z.infer<typeof ProductVariantSchema>
 export type ProductVariantsType = z.infer<typeof ProductVariantsSchema>
 export type ProductType = z.infer<typeof ProductSchema>
 export type VariantType = z.infer<typeof VariantSchema>
+export type ProductDetailType = z.infer<typeof ProductDetailSchema>
 export type ProductParamsType = z.infer<typeof ProductParamsSchema>
 export type ProductQueryType = z.infer<typeof ProductQuerySchema>
 export type GetProductsResType = z.infer<typeof GetProductsResSchema>
 export type GetAllProductsResType = z.infer<typeof GetAllProductsResSchema>
-export type ProductDetailType = z.infer<typeof ProductDetailSchema>
 export type UpsertVariantBodyType = z.infer<typeof UpsertVariantBodySchema>
 export type CreateProductBodyType = z.infer<typeof CreateProductBodySchema>
 export type UpdateProductBodyType = z.infer<typeof UpdateProductBodySchema>

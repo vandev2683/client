@@ -1,10 +1,10 @@
 import http from '@/lib/http'
 import type {
+  CategoryDetailType,
   CategoryType,
   CreateCategoryBodyType,
   GetAllCategoriesResType,
   GetCategoriesResType,
-  GetCategoryDetailResType,
   UpdateCategoryBodyType
 } from '@/schemaValidations/category.schema'
 import type { PaginationQueryType } from '@/schemaValidations/request.schema'
@@ -24,7 +24,7 @@ const categoryApis = {
   },
 
   findDetail(categoryId: number) {
-    return http.get<GetCategoryDetailResType>(`${BASE_URL}/${categoryId}`)
+    return http.get<CategoryDetailType>(`${BASE_URL}/${categoryId}`)
   },
 
   create(body: CreateCategoryBodyType) {

@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const CategorySchema = z.object({
   id: z.number(),
-  name: z.string().min(1).max(500),
+  name: z.string().min(1, 'Tên là bắt buộc').max(500),
   thumbnail: z.string().nullable(),
   parentCategoryId: z.number().or(z.string()).nullable(),
   description: z.string(),
@@ -18,6 +18,18 @@ export const CategoryWithParentSchema = CategorySchema.extend({
   })
     .nullable()
     .default(null)
+})
+
+export const CategoryDetailSchema = CategoryWithParentSchema.extend({
+  childCategories: z
+    .array(
+      CategorySchema.pick({
+        id: true,
+        name: true,
+        thumbnail: true
+      })
+    )
+    .default([])
 })
 
 export const CategoryParamsSchema = z.object({
@@ -37,18 +49,6 @@ export const GetAllCategoriesResSchema = GetCategoriesResSchema.pick({
   totalItems: true
 })
 
-export const GetCategoryDetailResSchema = CategoryWithParentSchema.extend({
-  childCategories: z
-    .array(
-      CategorySchema.pick({
-        id: true,
-        name: true,
-        thumbnail: true
-      })
-    )
-    .default([])
-})
-
 export const CreateCategoryBodySchema = CategorySchema.pick({
   name: true,
   thumbnail: true,
@@ -60,9 +60,9 @@ export const UpdateCategoryBodySchema = CreateCategoryBodySchema
 
 export type CategoryType = z.infer<typeof CategorySchema>
 export type CategoryWithParentType = z.infer<typeof CategoryWithParentSchema>
+export type CategoryDetailType = z.infer<typeof CategoryDetailSchema>
 export type CategoryParamsType = z.infer<typeof CategoryParamsSchema>
 export type GetCategoriesResType = z.infer<typeof GetCategoriesResSchema>
 export type GetAllCategoriesResType = z.infer<typeof GetAllCategoriesResSchema>
-export type GetCategoryDetailResType = z.infer<typeof GetCategoryDetailResSchema>
 export type CreateCategoryBodyType = z.infer<typeof CreateCategoryBodySchema>
 export type UpdateCategoryBodyType = z.infer<typeof UpdateCategoryBodySchema>

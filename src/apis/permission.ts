@@ -3,6 +3,7 @@ import type {
   CreatePermissionBodyType,
   GetAllPermissionsResType,
   GetPermissionsResType,
+  PermissionDetailType,
   PermissionType,
   UpdatePermissionBodyType
 } from '@/schemaValidations/permission.schema'
@@ -23,7 +24,7 @@ const permissionApis = {
   },
 
   findDetail(permissionId: number) {
-    return http.get<PermissionType>(`${BASE_URL}/${permissionId}`)
+    return http.get<PermissionDetailType>(`${BASE_URL}/${permissionId}`)
   },
 
   create(body: CreatePermissionBodyType) {

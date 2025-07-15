@@ -5,8 +5,8 @@ import type {
   ChangeRoleStatusBodyType,
   CreateRoleBodyType,
   GetAllRolesResType,
-  GetRoleDetailResType,
   GetRolesResType,
+  RoleDetailType,
   RoleType,
   UpdateRoleBodyType
 } from '@/schemaValidations/role.schema'
@@ -25,7 +25,7 @@ const roleApis = {
   },
 
   findDetail(roleId: number) {
-    return http.get<GetRoleDetailResType>(`${BASE_URL}/${roleId}`)
+    return http.get<RoleDetailType>(`${BASE_URL}/${roleId}`)
   },
 
   create(body: CreateRoleBodyType) {

@@ -1,8 +1,8 @@
 import http from '@/lib/http'
 import type {
+  AddressDetailType,
   AddressType,
-  AddressWithLocationType,
-  ChangeDefaultAddressBodyType,
+  ChangeAddressDefaultBodyType,
   CreateAddressBodyType,
   GetAddressesResType,
   GetAllAddressesResType,
@@ -25,7 +25,7 @@ const addressApis = {
   },
 
   findDetail(addressId: number) {
-    return http.get<AddressWithLocationType>(`${BASE_URL}/${addressId}`)
+    return http.get<AddressDetailType>(`${BASE_URL}/${addressId}`)
   },
 
   create(body: CreateAddressBodyType) {
@@ -37,7 +37,7 @@ const addressApis = {
     return http.put<AddressType>(`${BASE_URL}/${addressId}`, body)
   },
 
-  changeDefault(payload: { addressId: number; body: ChangeDefaultAddressBodyType }) {
+  changeDefault(payload: { addressId: number; body: ChangeAddressDefaultBodyType }) {
     const { addressId, body } = payload
     return http.patch<MessageResType>(`${BASE_URL}/${addressId}`, body)
   },

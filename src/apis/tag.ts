@@ -5,6 +5,7 @@ import type {
   CreateTagBodyType,
   GetAllTagsResType,
   GetTagsResType,
+  TagDetailType,
   TagType,
   UpdateTagBodyType
 } from '@/schemaValidations/tag.schema'
@@ -23,7 +24,7 @@ const tagApis = {
   },
 
   findDetail(tagId: number) {
-    return http.get<TagType>(`${BASE_URL}/${tagId}`)
+    return http.get<TagDetailType>(`${BASE_URL}/${tagId}`)
   },
 
   create(body: CreateTagBodyType) {

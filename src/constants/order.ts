@@ -18,3 +18,9 @@ export const OrderStatus = {
   Completed: 'Completed',
   Cancelled: 'Cancelled'
 } as const
+
+export const OrderStatusValues = Object.values(OrderStatus)
+export type OrderStatusType = (typeof OrderStatus)[keyof typeof OrderStatus]
+
+export const OrderTypeValues = Object.values(OrderType)
+export type OrderTypeType = (typeof OrderType)[keyof typeof OrderType]

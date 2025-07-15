@@ -9,6 +9,8 @@ export const WardSchema = z.object({
   districtId: z.number()
 })
 
+export const WardDetailSchema = WardSchema
+
 export const WardParamsSchema = z
   .object({
     wardId: z.coerce.number().int().positive()
@@ -28,10 +30,8 @@ export const GetAllWardsResSchema = GetWardsResSchema.pick({
   totalItems: true
 })
 
-export const GetWardDetailResSchema = WardSchema
-
 export type WardType = z.infer<typeof WardSchema>
+export type WardDetailType = z.infer<typeof WardDetailSchema>
 export type WardParamsType = z.infer<typeof WardParamsSchema>
 export type GetWardsResType = z.infer<typeof GetWardsResSchema>
 export type GetAllWardsResType = z.infer<typeof GetAllWardsResSchema>
-export type GetWardDetailResType = z.infer<typeof GetWardDetailResSchema>

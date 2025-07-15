@@ -1,7 +1,7 @@
 import http from '@/lib/http'
-import type { GetDistrictDetailResType } from '@/schemaValidations/district.schema'
-import type { GetAllProvincesResType, GetProvinceDetailResType } from '@/schemaValidations/province.schema'
-import type { GetWardDetailResType } from '@/schemaValidations/ward.schema'
+import type { DistrictDetailType } from '@/schemaValidations/district.schema'
+import type { GetAllProvincesResType, ProvinceDetailType } from '@/schemaValidations/province.schema'
+import type { WardDetailType } from '@/schemaValidations/ward.schema'
 
 const locationApis = {
   findProvinces() {
@@ -9,15 +9,15 @@ const locationApis = {
   },
 
   findProvinceDetail(provinceId: number) {
-    return http.get<GetProvinceDetailResType>(`/provinces/${provinceId}`)
+    return http.get<ProvinceDetailType>(`/provinces/${provinceId}`)
   },
 
   findDistrictDetail(districtId: number) {
-    return http.get<GetDistrictDetailResType>(`/districts/${districtId}`)
+    return http.get<DistrictDetailType>(`/districts/${districtId}`)
   },
 
   findWardDetail(wardId: number) {
-    return http.get<GetWardDetailResType>(`/wards/${wardId}`)
+    return http.get<WardDetailType>(`/wards/${wardId}`)
   }
 }
 

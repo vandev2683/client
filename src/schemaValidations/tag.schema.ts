@@ -1,14 +1,16 @@
-import { TagType } from '@/constants/tag'
 import { z } from 'zod'
+import { TagType } from '@/constants/tag'
 
 export const TagSchema = z.object({
   id: z.number(),
-  name: z.string().min(1).max(500),
+  name: z.string().min(1, 'Tên thẻ là bắt buộc').max(500),
   type: z.nativeEnum(TagType),
   description: z.string(),
   createdAt: z.date(),
   updatedAt: z.date()
 })
+
+export const TagDetailSchema = TagSchema
 
 export const TagParamsSchema = z.object({
   tagId: z.coerce.number().int().positive()
@@ -36,6 +38,7 @@ export const CreateTagBodySchema = TagSchema.pick({
 export const UpdateTagBodySchema = CreateTagBodySchema
 
 export type TagType = z.infer<typeof TagSchema>
+export type TagDetailType = z.infer<typeof TagDetailSchema>
 export type TagParamsType = z.infer<typeof TagParamsSchema>
 export type GetTagsResType = z.infer<typeof GetTagsResSchema>
 export type GetAllTagsResType = z.infer<typeof GetAllTagsResSchema>

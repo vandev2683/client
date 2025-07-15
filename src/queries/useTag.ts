@@ -2,9 +2,11 @@ import tagApis from '@/apis/tag'
 import type { PaginationQueryType } from '@/schemaValidations/request.schema'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+const BASE_KEY = 'tags'
+
 export const useTagsQuery = (query: PaginationQueryType) => {
   return useQuery({
-    queryKey: ['tags'],
+    queryKey: [BASE_KEY],
     queryFn: () => tagApis.list(query),
     placeholderData: keepPreviousData
   })
@@ -12,7 +14,7 @@ export const useTagsQuery = (query: PaginationQueryType) => {
 
 export const useAllTagsQuery = () => {
   return useQuery({
-    queryKey: ['tags'],
+    queryKey: [BASE_KEY],
     queryFn: tagApis.findAll,
     placeholderData: keepPreviousData
   })
@@ -20,7 +22,7 @@ export const useAllTagsQuery = () => {
 
 export const useTagDetailQuery = (tagId: number | undefined) => {
   return useQuery({
-    queryKey: ['tags', tagId],
+    queryKey: [BASE_KEY, tagId],
     queryFn: () => tagApis.findDetail(tagId as number),
     enabled: tagId !== undefined && tagId > 0
   })
@@ -31,7 +33,7 @@ export const useCreateTagMutation = () => {
   return useMutation({
     mutationFn: tagApis.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -41,7 +43,7 @@ export const useUpdateTagMutation = () => {
   return useMutation({
     mutationFn: tagApis.update,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -51,7 +53,7 @@ export const useDeleteTagMutation = () => {
   return useMutation({
     mutationFn: tagApis.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }

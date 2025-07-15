@@ -26,10 +26,10 @@ import ProfileLayout from './pages/client/Profile'
 import Information from './pages/client/Profile/pages/Information'
 import ChangePassword from './pages/client/Profile/pages/ChangePassword'
 import OrderHistory from './pages/client/Profile/pages/OrderHistory'
+import Order from './pages/manage/Order'
 
 const Dashboard = () => <div>Dashboard Page - Sẽ được triển khai sau</div>
 const Bookings = () => <div>Bookings Page - Sẽ được triển khai sau</div>
-const Orders = () => <div>Orders Page - Sẽ được triển khai sau</div>
 
 function ProtectedRoute() {
   const { isAuth } = useAppContext()
@@ -188,7 +188,7 @@ export default function useRouteElements() {
             },
             {
               path: 'orders',
-              element: <Orders />
+              element: <Order />
             },
             {
               path: 'users',

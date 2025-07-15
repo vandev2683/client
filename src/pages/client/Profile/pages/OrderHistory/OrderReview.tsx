@@ -1,14 +1,21 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { useForm } from 'react-hook-form'
-import { CreateReviewBodySchema, type CreateReviewBodyType } from '@/schemaValidations/review.schema'
+import { CreateReviewBodySchema, type CreateReviewBodyType, type ReviewType } from '@/schemaValidations/review.schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Star } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
+import {
+  useCreateReviewMutation,
+  useReviewWithProductAndOrderQuery,
+  useUpdateReviewMutation
+} from '@/queries/useReview'
+import { handleError } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export default function OrderDetail({
   productId,
@@ -20,6 +27,8 @@ export default function OrderDetail({
   children: ReactNode
 }) {
   const [open, setOpen] = useState(false)
+  const [reviewExists, setReviewExists] = useState<ReviewType | null>(null)
+  const [isDisabled, setIsDisabled] = useState(false)
 
   const [hoveredStar, setHoveredStar] = useState<number>(0)
 
@@ -34,6 +43,21 @@ export default function OrderDetail({
   })
 
   const rating = form.watch('rating')
+
+  const reviewQuery = useReviewWithProductAndOrderQuery(productId, orderId)
+  useEffect(() => {
+    if (reviewQuery.data !== undefined && reviewQuery.data.data) {
+      const { content, rating, productId, orderId } = reviewQuery.data.data
+      form.reset({
+        content: content,
+        rating: rating,
+        productId: productId,
+        orderId: orderId
+      })
+      setReviewExists(reviewQuery.data.data)
+      setIsDisabled(reviewQuery.data.data.isEdited)
+    }
+  }, [reviewQuery.data, form])
 
   const handleStarClick = (starValue: number) => {
     form.setValue('rating', starValue)
@@ -77,6 +101,7 @@ export default function OrderDetail({
           onClick={() => handleStarClick(starValue)}
           onMouseEnter={() => setHoveredStar(starValue)}
           onMouseLeave={() => setHoveredStar(0)}
+          disabled={isDisabled}
         >
           <Star
             className={`w-8 h-8 transition-colors duration-150 ${
@@ -98,8 +123,32 @@ export default function OrderDetail({
     })
   }
 
+  const createReviewMutation = useCreateReviewMutation()
+  const updateReviewMutation = useUpdateReviewMutation()
   const onSubmit = async (body: CreateReviewBodyType) => {
-    console.log('Submitting review:', body)
+    if (createReviewMutation.isPending || updateReviewMutation.isPending) return
+    try {
+      if (reviewExists === null) {
+        await createReviewMutation.mutateAsync(body)
+
+        toast.success('Đánh giá đã được gửi thành công!')
+      } else {
+        await updateReviewMutation.mutateAsync({
+          reviewId: reviewExists.id,
+          body: {
+            content: body.content,
+            rating: body.rating,
+            productId: body.productId,
+            orderId: body.orderId
+          }
+        })
+        toast.success('Đánh giá đã được cập nhật thành công!')
+      }
+      form.reset()
+      setOpen(false)
+    } catch (error) {
+      handleError(error, form.setError)
+    }
   }
 
   if (!orderId || !productId) return <div className='text-red-500'>Đơn hàng không tồn tại.</div>
@@ -138,10 +187,11 @@ export default function OrderDetail({
                               min='0'
                               max='5'
                               step='0.1'
-                              value={rating.toString()}
+                              value={field.value.toString()}
                               onChange={handleInputChange}
                               className='w-full'
                               placeholder='Nhập số từ 0.0 đến 5.0'
+                              disabled={isDisabled}
                             />
                             <span className='text-xs font-semibold'>0.0 - 5.0</span>
                           </div>
@@ -165,6 +215,7 @@ export default function OrderDetail({
                           className='w-full'
                           {...field}
                           placeholder='Đánh giá thêm nếu hài lòng...'
+                          disabled={isDisabled}
                         />
                         <FormMessage />
                       </div>
@@ -174,9 +225,18 @@ export default function OrderDetail({
               />
             </div>
           </form>
-          <Button type='submit' form='add-edit-review-form'>
-            Lưu
-          </Button>
+          <span className='text-sm text-gray-600'>Note: Đánh giá chỉ cho phép sửa một lần duy nhất</span>
+          {reviewExists ? (
+            !reviewExists.isEdited && (
+              <Button type='submit' form='add-edit-review-form'>
+                Cập nhật
+              </Button>
+            )
+          ) : (
+            <Button type='submit' form='add-edit-review-form'>
+              Gửi
+            </Button>
+          )}
         </Form>
       </DialogContent>
     </Dialog>

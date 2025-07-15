@@ -1,6 +1,7 @@
 import http from '@/lib/http'
 import type {
   ChangeCouponStatusBodyType,
+  CouponDetailType,
   CouponType,
   CreateCouponBodyType,
   GetAllCouponsResType,
@@ -24,7 +25,7 @@ const couponApis = {
   },
 
   findDetail(couponId: number) {
-    return http.get<CouponType>(`${BASE_URL}/${couponId}`)
+    return http.get<CouponDetailType>(`${BASE_URL}/${couponId}`)
   },
 
   create(body: CreateCouponBodyType) {

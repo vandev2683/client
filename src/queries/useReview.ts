@@ -1,21 +1,22 @@
 import reviewApis from '@/apis/review'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-export const useReviewsByProductQuery = (productId: number | undefined) => {
+const BASE_KEY = 'reviews'
+
+export const useProductReviewsQuery = (productId: number | undefined) => {
   return useQuery({
-    queryKey: ['reviews', `productId-${productId}`],
-    queryFn: () => reviewApis.findAllByProductId({ productId: productId as number }),
+    queryKey: [BASE_KEY, productId],
+    queryFn: () => reviewApis.list({ productId: productId as number }),
     enabled: productId !== undefined && productId > 0,
     placeholderData: keepPreviousData
   })
 }
 
-export const useReviewWithProductAndOrderQuery = (productId: number | undefined, orderId: number | undefined) => {
+export const useReviewDetailQuery = (productId: number | undefined, orderId: number | undefined) => {
   return useQuery({
-    queryKey: ['reviews', `productId-${productId}`, `orderId-${orderId}`],
-    queryFn: () => reviewApis.findWithProductAndOrderId({ productId: productId as number, orderId: orderId as number }),
-    enabled: productId !== undefined && productId > 0 && orderId !== undefined && orderId > 0,
-    placeholderData: keepPreviousData
+    queryKey: [BASE_KEY, productId, orderId],
+    queryFn: () => reviewApis.findDetail({ productId: productId as number, orderId: orderId as number }),
+    enabled: productId !== undefined && productId > 0 && orderId !== undefined && orderId > 0
   })
 }
 
@@ -24,7 +25,7 @@ export const useCreateReviewMutation = () => {
   return useMutation({
     mutationFn: reviewApis.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY] })
     }
   })
 }
@@ -34,7 +35,7 @@ export const useUpdateReviewMutation = () => {
   return useMutation({
     mutationFn: reviewApis.update,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY] })
     }
   })
 }
@@ -44,7 +45,7 @@ export const useDeleteReviewMutation = () => {
   return useMutation({
     mutationFn: reviewApis.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY] })
     }
   })
 }

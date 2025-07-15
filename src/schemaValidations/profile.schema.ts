@@ -1,21 +1,11 @@
 import { z } from 'zod'
-import { UserSchema } from './user.schema'
-import { RoleSchema } from './role.schema'
-import { GetOrderDetailResSchema } from './order.schema'
+import { UserDetailSchema, UserSchema } from './user.schema'
+import { OrderDetailSchema } from './order.schema'
 
-export const ProfileSchema = UserSchema.omit({
-  password: true,
-  totpSecret: true
-}).extend({
-  role: RoleSchema.pick({
-    id: true,
-    name: true
-  })
-})
+export const ProfileSchema = UserDetailSchema
 
-export const GetOrdersProfileResSchema = z.object({
-  data: z.array(GetOrderDetailResSchema),
-  totalItems: z.number()
+export const ProfileDetailSchema = ProfileSchema.extend({
+  orders: z.array(OrderDetailSchema)
 })
 
 export const UpdateProfileBodySchema = UserSchema.pick({
@@ -25,11 +15,11 @@ export const UpdateProfileBodySchema = UserSchema.pick({
   dateOfBirth: true
 }).strict()
 
-export const ChangePasswordBodySchema = UserSchema.pick({
+export const ChangeProfilePasswordBodySchema = UserSchema.pick({
   password: true
 })
   .extend({
-    newPassword: z.string().min(3),
+    newPassword: z.string().min(3, 'Mật khẩu mới phải có ít nhất 3 ký tự'),
     confirmNewPassword: z.string()
   })
   .strict()
@@ -37,13 +27,13 @@ export const ChangePasswordBodySchema = UserSchema.pick({
     if (newPassword !== confirmNewPassword) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'New password and confirm new password must match',
+        message: 'Xác nhận mật khẩu mới không khớp',
         path: ['confirmNewPassword']
       })
     }
   })
 
 export type ProfileType = z.infer<typeof ProfileSchema>
-export type GetOrdersProfileResType = z.infer<typeof GetOrdersProfileResSchema>
+export type ProfileDetailType = z.infer<typeof ProfileDetailSchema>
 export type UpdateProfileBodyType = z.infer<typeof UpdateProfileBodySchema>
-export type ChangePasswordBodyType = z.infer<typeof ChangePasswordBodySchema>
+export type ChangeProfilePasswordBodyType = z.infer<typeof ChangeProfilePasswordBodySchema>

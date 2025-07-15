@@ -5,12 +5,17 @@ import { OrderSchema } from './order.schema'
 
 export const TableSchema = z.object({
   id: z.number(),
-  code: z.string().min(1).max(50),
-  capacity: z.coerce.number().int().positive(),
+  code: z.string().min(1, 'Mã bàn là bắt buộc').max(50),
+  capacity: z.coerce.number().int().positive('Sức chứa bàn phải lớn hơn 0'),
   status: z.nativeEnum(TableStatus),
   location: z.string().max(1000),
   createdAt: z.date(),
   updatedAt: z.date()
+})
+
+export const TableDetailSchema = TableSchema.extend({
+  bookings: z.array(BookingSchema),
+  orders: z.array(OrderSchema)
 })
 
 export const TableParamsSchema = z.object({
@@ -30,11 +35,6 @@ export const GetAllTablesResSchema = GetTablesResSchema.pick({
   totalItems: true
 })
 
-export const GetTableDetailResSchema = TableSchema.extend({
-  bookings: z.array(BookingSchema),
-  orders: z.array(OrderSchema)
-})
-
 export const CreateTableBodySchema = TableSchema.pick({
   code: true,
   capacity: true,
@@ -49,10 +49,10 @@ export const ChangeTableStatusBodySchema = TableSchema.pick({
 }).strict()
 
 export type TableType = z.infer<typeof TableSchema>
+export type TableDetailType = z.infer<typeof TableDetailSchema>
 export type TableParamsType = z.infer<typeof TableParamsSchema>
 export type GetTablesResType = z.infer<typeof GetTablesResSchema>
 export type GetAllTablesResType = z.infer<typeof GetAllTablesResSchema>
-export type GetTableDetailResType = z.infer<typeof GetTableDetailResSchema>
 export type CreateTableBodyType = z.infer<typeof CreateTableBodySchema>
 export type UpdateTableBodyType = z.infer<typeof UpdateTableBodySchema>
 export type ChangeTableStatusBodyType = z.infer<typeof ChangeTableStatusBodySchema>

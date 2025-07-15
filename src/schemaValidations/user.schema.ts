@@ -4,11 +4,11 @@ import { RoleSchema } from './role.schema'
 
 export const UserSchema = z.object({
   id: z.number(),
-  email: z.string().email().max(500),
-  password: z.string().min(3).max(500),
+  email: z.string().email('Email không hợp lệ').max(500),
+  password: z.string().min(3, 'Mật khẩu tối thiểu 3 ký tự').max(500),
   roleId: z.coerce.number(),
-  name: z.string().min(3).max(500),
-  phoneNumber: z.string().min(9).max(50),
+  name: z.string().min(3, 'Tên là bắt buộc').max(500),
+  phoneNumber: z.string().min(9, 'Số điện thoại là bắt buộc').max(50),
   avatar: z.string().max(1000).nullable(),
   dateOfBirth: z.coerce.date().nullable(),
   totpSecret: z.string().max(1000).nullable(),
@@ -17,7 +17,10 @@ export const UserSchema = z.object({
   updatedAt: z.date()
 })
 
-export const UserWithRoleSchema = UserSchema.extend({
+export const UserDetailSchema = UserSchema.omit({
+  password: true,
+  totpSecret: true
+}).extend({
   role: RoleSchema.pick({
     id: true,
     name: true,
@@ -30,7 +33,7 @@ export const UserParamsSchema = z.object({
 })
 
 export const GetUsersResSchema = z.object({
-  data: z.array(UserWithRoleSchema),
+  data: z.array(UserDetailSchema),
   totalItems: z.number(),
   page: z.number(),
   limit: z.number(),
@@ -58,7 +61,7 @@ export const UpdateUserBodySchema = CreateUserBodySchema.omit({
   password: true
 }).strict()
 
-export const ChangePasswordBodySchema = UserSchema.pick({
+export const ChangeUserPasswordBodySchema = UserSchema.pick({
   password: true
 }).strict()
 
@@ -67,11 +70,11 @@ export const ChangeUserStatusBodySchema = UserSchema.pick({
 }).strict()
 
 export type UserType = z.infer<typeof UserSchema>
-export type UserWithRoleType = z.infer<typeof UserWithRoleSchema>
+export type UserDetailType = z.infer<typeof UserDetailSchema>
 export type UserParamsType = z.infer<typeof UserParamsSchema>
 export type GetUsersResType = z.infer<typeof GetUsersResSchema>
 export type GetAllUsersResType = z.infer<typeof GetAllUsersResSchema>
 export type CreateUserBodyType = z.infer<typeof CreateUserBodySchema>
 export type UpdateUserBodyType = z.infer<typeof UpdateUserBodySchema>
-export type ChangePasswordBodyType = z.infer<typeof ChangePasswordBodySchema>
+export type ChangeUserPasswordBodyType = z.infer<typeof ChangeUserPasswordBodySchema>
 export type ChangeUserStatusBodyType = z.infer<typeof ChangeUserStatusBodySchema>

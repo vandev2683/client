@@ -2,9 +2,11 @@ import couponApis from '@/apis/coupon'
 import type { PaginationQueryType } from '@/schemaValidations/request.schema'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+const BASE_KEY = 'coupons'
+
 export const useCouponsQuery = (query: PaginationQueryType) => {
   return useQuery({
-    queryKey: ['coupons'],
+    queryKey: [BASE_KEY],
     queryFn: () => couponApis.list(query),
     placeholderData: keepPreviousData
   })
@@ -12,7 +14,7 @@ export const useCouponsQuery = (query: PaginationQueryType) => {
 
 export const useAllCouponsQuery = () => {
   return useQuery({
-    queryKey: ['coupons'],
+    queryKey: [BASE_KEY],
     queryFn: () => couponApis.findAll(),
     placeholderData: keepPreviousData
   })
@@ -20,7 +22,7 @@ export const useAllCouponsQuery = () => {
 
 export const useCouponDetailQuery = (couponId: number | undefined) => {
   return useQuery({
-    queryKey: ['coupons', couponId],
+    queryKey: [BASE_KEY, couponId],
     queryFn: () => couponApis.findDetail(couponId as number),
     enabled: couponId !== undefined && couponId > 0
   })
@@ -31,7 +33,7 @@ export const useCreateCouponMutation = () => {
   return useMutation({
     mutationFn: couponApis.create,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['coupons'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -41,7 +43,7 @@ export const useUpdateCouponMutation = () => {
   return useMutation({
     mutationFn: couponApis.update,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['coupons'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -51,7 +53,7 @@ export const useChangeCouponStatusMutation = () => {
   return useMutation({
     mutationFn: couponApis.changeStatus,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['coupons'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }
@@ -61,7 +63,7 @@ export const useDeleteCouponMutation = () => {
   return useMutation({
     mutationFn: couponApis.delete,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['coupons'], exact: true })
+      queryClient.invalidateQueries({ queryKey: [BASE_KEY], exact: true })
     }
   })
 }

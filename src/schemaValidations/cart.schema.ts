@@ -5,20 +5,14 @@ export const CartItemSchema = z.object({
   id: z.number(),
   variantId: z.number(),
   userId: z.number(),
-  quantity: z.number().int().positive().min(1),
+  quantity: z.coerce.number().int().positive().min(1),
   createdAt: z.date(),
   updatedAt: z.date()
 })
 
 export const CartItemDetailSchema = CartItemSchema.extend({
-  variant: VariantSchema.omit({
-    createdAt: true,
-    updatedAt: true
-  }).extend({
-    product: ProductSchema.omit({
-      createdAt: true,
-      updatedAt: true
-    })
+  variant: VariantSchema.extend({
+    product: ProductSchema
   })
 })
 
@@ -31,9 +25,17 @@ export const CartItemParamsSchema = z.object({
   cartItemId: z.coerce.number().int().positive()
 })
 
-export const GetAllCartItemsResSchema = z.object({
+export const GetCartItemsResSchema = z.object({
   data: z.array(CartItemDetailSchema),
-  totalItems: z.number()
+  totalItems: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number()
+})
+
+export const GetAllCartItemsResSchema = GetCartItemsResSchema.pick({
+  data: true,
+  totalItems: true
 })
 
 export const CreateCartItemBodySchema = CartItemSchema.pick({
@@ -43,7 +45,7 @@ export const CreateCartItemBodySchema = CartItemSchema.pick({
 
 export const UpdateCartItemBodySchema = CreateCartItemBodySchema
 
-export const DeleteCartItemBodySchema = z
+export const DeleteCartItemsBodySchema = z
   .object({
     cartItemIds: z.array(z.coerce.number().int().positive())
   })
@@ -53,7 +55,8 @@ export type CartItemType = z.infer<typeof CartItemSchema>
 export type CartItemDetailType = z.infer<typeof CartItemDetailSchema>
 export type ExtendedCartItemType = z.infer<typeof ExtendedCartItemSchema>
 export type CartItemParamsType = z.infer<typeof CartItemParamsSchema>
+export type GetCartItemsResType = z.infer<typeof GetCartItemsResSchema>
 export type GetAllCartItemsResType = z.infer<typeof GetAllCartItemsResSchema>
 export type CreateCartItemBodyType = z.infer<typeof CreateCartItemBodySchema>
 export type UpdateCartItemBodyType = z.infer<typeof UpdateCartItemBodySchema>
-export type DeleteCartItemBodyType = z.infer<typeof DeleteCartItemBodySchema>
+export type DeleteCartItemsBodyType = z.infer<typeof DeleteCartItemsBodySchema>

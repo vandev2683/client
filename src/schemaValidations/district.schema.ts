@@ -10,6 +10,10 @@ export const DistrictSchema = z.object({
   provinceId: z.number()
 })
 
+export const DistrictDetailSchema = DistrictSchema.extend({
+  wards: z.array(WardSchema)
+})
+
 export const DistrictParamsSchema = z
   .object({
     districtId: z.coerce.number().int().positive()
@@ -29,12 +33,8 @@ export const GetAllDistrictsResSchema = GetDistrictsResSchema.pick({
   totalItems: true
 })
 
-export const GetDistrictDetailResSchema = DistrictSchema.extend({
-  wards: z.array(WardSchema)
-})
-
 export type DistrictType = z.infer<typeof DistrictSchema>
+export type DistrictDetailType = z.infer<typeof DistrictDetailSchema>
 export type DistrictParamsType = z.infer<typeof DistrictParamsSchema>
 export type GetDistrictsResType = z.infer<typeof GetDistrictsResSchema>
 export type GetAllDistrictsResType = z.infer<typeof GetAllDistrictsResSchema>
-export type GetDistrictDetailResType = z.infer<typeof GetDistrictDetailResSchema>

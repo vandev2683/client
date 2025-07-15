@@ -841,6 +841,8 @@ export default function Checkout() {
                             <QuantityController
                               onIncrease={(value) => handleQuantityChange(item.id, value)}
                               onDecrease={(value) => handleQuantityChange(item.id, value)}
+                              onType={(value) => handleQuantityChange(item.id, value)}
+                              onFocusOut={(value) => handleQuantityChange(item.id, value)}
                               value={item.quantity}
                               max={item.variant.stock}
                             />

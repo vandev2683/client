@@ -9,6 +9,10 @@ export const ProvinceSchema = z.object({
   longitude: z.string().max(50)
 })
 
+export const ProvinceDetailSchema = ProvinceSchema.extend({
+  districts: z.array(DistrictSchema)
+})
+
 export const ProvinceParamsSchema = z
   .object({
     provinceId: z.coerce.number().int().positive()
@@ -28,12 +32,8 @@ export const GetAllProvincesResSchema = GetProvincesResSchema.pick({
   totalItems: true
 })
 
-export const GetProvinceDetailResSchema = ProvinceSchema.extend({
-  districts: z.array(DistrictSchema)
-})
-
 export type ProvinceType = z.infer<typeof ProvinceSchema>
+export type ProvinceDetailType = z.infer<typeof ProvinceDetailSchema>
 export type ProvinceParamsType = z.infer<typeof ProvinceParamsSchema>
 export type GetProvincesResType = z.infer<typeof GetProvincesResSchema>
 export type GetAllProvincesResType = z.infer<typeof GetAllProvincesResSchema>
-export type GetProvinceDetailResType = z.infer<typeof GetProvinceDetailResSchema>

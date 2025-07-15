@@ -5,8 +5,8 @@ import type {
   ChangeTableStatusBodyType,
   CreateTableBodyType,
   GetAllTablesResType,
-  GetTableDetailResType,
   GetTablesResType,
+  TableDetailType,
   TableType,
   UpdateTableBodyType
 } from '@/schemaValidations/table.schema'
@@ -25,7 +25,7 @@ const tableApis = {
   },
 
   findDetail(tableId: number) {
-    return http.get<GetTableDetailResType>(`${BASE_URL}/${tableId}`)
+    return http.get<TableDetailType>(`${BASE_URL}/${tableId}`)
   },
 
   create(body: CreateTableBodyType) {

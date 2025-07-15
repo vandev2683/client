@@ -1,9 +1,10 @@
 import http from '@/lib/http'
+import type { MessageResType } from '@/schemaValidations/response.schema'
 import type {
   CreateReviewBodyType,
-  GetAllReviewsQueryType,
-  GetAllReviewsResType,
-  GetReviewWithProductAndOrderQueryType,
+  GetReviewDetailQueryType,
+  GetReviewsQueryType,
+  GetReviewsResType,
   ReviewDetailType,
   ReviewType,
   UpdateReviewBodyType
@@ -12,13 +13,13 @@ import type {
 const BASE_URL = '/reviews'
 
 const reviewApis = {
-  findAllByProductId: (query: GetAllReviewsQueryType) => {
-    return http.get<GetAllReviewsResType>(`${BASE_URL}/all`, {
+  list: (query: GetReviewsQueryType) => {
+    return http.get<GetReviewsResType>(`${BASE_URL}/list`, {
       params: query
     })
   },
 
-  findWithProductAndOrderId(query: GetReviewWithProductAndOrderQueryType) {
+  findDetail(query: GetReviewDetailQueryType) {
     return http.get<ReviewDetailType>(BASE_URL, {
       params: query
     })
@@ -34,7 +35,7 @@ const reviewApis = {
   },
 
   delete(reviewId: number) {
-    return http.delete(`${BASE_URL}/${reviewId}`)
+    return http.delete<MessageResType>(`${BASE_URL}/${reviewId}`)
   }
 }
 

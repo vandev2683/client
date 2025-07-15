@@ -8,13 +8,13 @@ export const PaymentSchema = z.object({
   transactionId: z.string().trim().default('')
 })
 
-export const PaymentLinkBodySchema = z
+export const GetPaymentLinkBodySchema = z
   .object({
     orderId: z.number()
   })
   .strict()
 
-export const PaymentLinkResSchema = z.object({
+export const GetPaymentLinkResSchema = z.object({
   url: z.string()
 })
 
@@ -69,7 +69,7 @@ export const MomoPaymentCallbackQuerySchema = z.object({
 })
 
 export type PaymentType = z.infer<typeof PaymentSchema>
-export type PaymentLinkBodyType = z.infer<typeof PaymentLinkBodySchema>
-export type PaymentLinkResType = z.infer<typeof PaymentLinkResSchema>
+export type GetPaymentLinkBodyType = z.infer<typeof GetPaymentLinkBodySchema>
+export type GetPaymentLinkResType = z.infer<typeof GetPaymentLinkResSchema>
 export type VNPayPaymentCallbackQueryType = z.infer<typeof VNPayPaymentCallbackQuerySchema>
 export type MomoPaymentCallbackQueryType = z.infer<typeof MomoPaymentCallbackQuerySchema>
