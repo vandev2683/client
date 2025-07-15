@@ -69,11 +69,12 @@ export const RegisterBodySchema = UserSchema.pick({
     }
   })
 
-export const RegisterResSchema = UserDetailSchema.extend({
+export const RegisterResSchema = z.object({
   tokens: z.object({
     accessToken: z.string(),
     refreshToken: z.string()
-  })
+  }),
+  user: UserDetailSchema
 })
 
 export const LoginBodySchema = UserSchema.pick({
