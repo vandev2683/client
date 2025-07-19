@@ -37,12 +37,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AutoPagination from '@/components/AutoPagination'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { handleError } from '@/lib/utils'
+import { getHtmlPlainTextTitle, handleError } from '@/lib/utils'
 import type { CategoryWithParentType } from '@/schemaValidations/category.schema'
 import { useAllCategoriesQuery, useDeleteCategoryMutation } from '@/queries/useCategory'
 import AddCategory from './AddCategory'
 import EditCategory from './EditCategory'
 import Config from '@/constants/config'
+import { categorySocket } from '@/lib/sockets'
+import type { MessageResType } from '@/schemaValidations/response.schema'
+import { useAppContext } from '@/components/AppProvider'
 
 const CategoryContext = createContext<{
   categoryIdEdit: number | undefined
@@ -96,9 +99,16 @@ export const columns: ColumnDef<CategoryWithParentType>[] = [
     header: 'Description',
     cell: ({ row }) => {
       const description = row.getValue('description') as string
-      const match = description.match(/<p[^>]*>.*?<\/p>/i)
-      const briefDesc = match ? match[0] : description
-      return <div dangerouslySetInnerHTML={{ __html: briefDesc }} className='whitespace-pre-line' />
+      const plainTextTitle = getHtmlPlainTextTitle(description)
+      return (
+        <div className='max-w-[300px]'>
+          <div
+            dangerouslySetInnerHTML={{ __html: description }}
+            className='overflow-hidden text-ellipsis whitespace-nowrap [&>*]:inline [&>*]:whitespace-nowrap [&>*]:overflow-hidden [&>*]:text-ellipsis'
+            title={plainTextTitle}
+          />
+        </div>
+      )
     }
   },
   {
@@ -186,6 +196,7 @@ function AlertDialogTagDelete({
 
 const PAGE_SIZE = 10
 export default function CategoryTable() {
+  const { isAuth } = useAppContext()
   const navigate = useNavigate()
 
   const query = useQuery()
@@ -194,8 +205,28 @@ export default function CategoryTable() {
   const [categoryIdEdit, setCategoryIdEdit] = useState<number | undefined>()
   const [categoryDelete, setCategoryDelete] = useState<CategoryWithParentType | null>(null)
 
-  const categoriesQuery = useAllCategoriesQuery()
-  const data = categoriesQuery.data?.data.data || []
+  const { data: categories, refetch } = useAllCategoriesQuery()
+  const data = categories?.data.data || []
+
+  useEffect(() => {
+    if (isAuth) {
+      categorySocket.connect()
+    } else {
+      categorySocket.disconnect()
+      return
+    }
+
+    categorySocket.on('sended-category', (data: MessageResType) => {
+      setTimeout(() => {
+        refetch()
+      }, 10)
+    })
+
+    return () => {
+      categorySocket.off('sended-category')
+      categorySocket.disconnect()
+    }
+  }, [isAuth, refetch])
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])

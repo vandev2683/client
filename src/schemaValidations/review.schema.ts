@@ -9,6 +9,7 @@ export const ReviewSchema = z.object({
   rating: z.coerce.number().min(0).max(5),
   content: z.string(),
   isEdited: z.boolean(),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })

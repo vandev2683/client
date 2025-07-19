@@ -16,6 +16,8 @@ import {
   DropdownMenuTrigger
 } from './ui/dropdown-menu'
 import { Dialog, DialogContent } from './ui/dialog'
+import { DialogTitle } from '@radix-ui/react-dialog'
+import classNames from 'classnames'
 
 export function generateVariants(variants: ProductVariantsType) {
   // Hàm hỗ trợ để tạo tất cả tổ hợp
@@ -176,7 +178,11 @@ export default function VariantsList({
         </div>
       </div>
 
-      <ScrollArea className='max-h-[500px] overflow-y-auto'>
+      <ScrollArea
+        className={classNames('pr-4', {
+          'h-[500px]': variants.length > 4
+        })}
+      >
         <div className='space-y-4'>
           {variants.map((variant, index) => {
             const attributes = parseAttributes(variant.value)
@@ -318,9 +324,9 @@ export default function VariantsList({
       </ScrollArea>
 
       <Dialog open={isOpenPreview} onOpenChange={setIsOpenPreview}>
-        <DialogContent className='max-w-4xl max-h-[80vh] overflow-y-auto'>
+        <DialogContent className='max-w-4xl max-h-[80vh] overflow-y-auto' aria-describedby={undefined}>
           <div className='p-2'>
-            <h2 className='text-lg font-semibold mb-1'>Chọn ảnh cho biến thể</h2>
+            <DialogTitle className='text-lg font-semibold mb-1'>Chọn ảnh cho biến thể</DialogTitle>
             <p className='mb-4 text-sm italic'>Note: Chỉ những ảnh đã Thêm/Sửa thành công mới được chọn</p>
             {imagesExists && imagesExists.length > 0 ? (
               <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'>

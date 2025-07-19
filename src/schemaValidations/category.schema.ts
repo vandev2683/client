@@ -6,6 +6,7 @@ export const CategorySchema = z.object({
   thumbnail: z.string().nullable(),
   parentCategoryId: z.number().or(z.string()).nullable(),
   description: z.string(),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })

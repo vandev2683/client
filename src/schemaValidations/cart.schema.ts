@@ -6,8 +6,8 @@ export const CartItemSchema = z.object({
   variantId: z.number(),
   userId: z.number(),
   quantity: z.coerce.number().int().positive().min(1),
-  createdAt: z.date(),
-  updatedAt: z.date()
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
 })
 
 export const CartItemDetailSchema = CartItemSchema.extend({

@@ -10,6 +10,7 @@ export const BookingSchema = z.object({
   status: z.nativeEnum(BookingStatus),
   note: z.string().default(''),
   userId: z.number().nullable(),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })

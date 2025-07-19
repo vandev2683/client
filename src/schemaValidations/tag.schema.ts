@@ -6,6 +6,7 @@ export const TagSchema = z.object({
   name: z.string().min(1, 'Tên thẻ là bắt buộc').max(500),
   type: z.nativeEnum(TagType),
   description: z.string(),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })

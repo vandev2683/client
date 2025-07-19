@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useEffect } from 'react'
 import { UpdateTagBodySchema, type UpdateTagBodyType } from '@/schemaValidations/tag.schema'
-import { handleError } from '@/lib/utils'
+import { formatTagType, handleError } from '@/lib/utils'
 import { TagTypeValues } from '@/constants/tag'
 import { toast } from 'sonner'
 import TinyEditor from '@/components/TinyEditor'
@@ -104,7 +104,7 @@ export default function EditTag({
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='name'>Tên thẻ</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <Input id='name' className='w-full' {...field} />
+                        <Input id='name' className='w-full' {...field} placeholder='Tên thẻ...' />
                         <FormMessage />
                       </div>
                     </div>
@@ -132,7 +132,7 @@ export default function EditTag({
                           <SelectContent>
                             {TagTypeValues.map((type) => (
                               <SelectItem key={type} value={type}>
-                                {type}
+                                {formatTagType(type)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -152,7 +152,7 @@ export default function EditTag({
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='description'>Mô tả thẻ</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <TinyEditor value={field.value} onChange={field.onChange} />
+                        <TinyEditor value={field.value} onChange={field.onChange} h={200} />
                         <FormMessage />
                       </div>
                     </div>

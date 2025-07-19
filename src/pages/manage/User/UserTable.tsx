@@ -37,36 +37,43 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AutoPagination from '@/components/AutoPagination'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { cn, handleError } from '@/lib/utils'
+import { cn, formatRoleName, formatUserStatus, handleError, removeVietnameseAccents } from '@/lib/utils'
 import EditUser from './EditUser'
 import AddUser from './AddUser'
-import type { UserWithRoleType } from '@/schemaValidations/user.schema'
 import { useAllUsersQuery, useChangeUserStatusMutation, useDeleteUserMutation } from '@/queries/useUser'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import { UserStatusValues, type UserStatusType } from '@/constants/user'
+import { UserStatus, UserStatusValues, type UserStatusType } from '@/constants/user'
+import { RoleName, RoleNameValues } from '@/constants/role'
 import ChangePassword from './ChangePassword'
+import type { UserDetailType } from '@/schemaValidations/user.schema'
+import classNames from 'classnames'
 
 const UserContext = createContext<{
   userIdEdit: number | undefined
   setUserIdEdit: (id: number | undefined) => void
-  userChangePassword: UserWithRoleType | null
-  setUserChangePassword: (user: UserWithRoleType | null) => void
-  userDelete: UserWithRoleType | null
-  setUserDelete: (user: UserWithRoleType | null) => void
+  userChangePassword: UserDetailType | null
+  setUserChangePassword: (user: UserDetailType | null) => void
+  userDelete: UserDetailType | null
+  setUserDelete: (user: UserDetailType | null) => void
 }>({
   userIdEdit: undefined,
   setUserIdEdit: (id: number | undefined) => {},
   userChangePassword: null,
-  setUserChangePassword: (user: UserWithRoleType | null) => {},
+  setUserChangePassword: (user: UserDetailType | null) => {},
   userDelete: null,
-  setUserDelete: (user: UserWithRoleType | null) => {}
+  setUserDelete: (user: UserDetailType | null) => {}
 })
 
-export const columns: ColumnDef<UserWithRoleType>[] = [
+export const columns: ColumnDef<UserDetailType>[] = [
   {
     accessorKey: 'email',
     header: 'Email',
     cell: ({ row }) => <div className='ml-4'>{row.getValue('email')}</div>
+  },
+  {
+    accessorKey: 'name',
+    header: 'Name',
+    cell: ({ row }) => <div>{row.getValue('name')}</div>
   },
   {
     accessorKey: 'phoneNumber',
@@ -78,7 +85,7 @@ export const columns: ColumnDef<UserWithRoleType>[] = [
     header: 'Vai trò',
     cell: function Convert({ row }) {
       const roleName = row.original.role.name
-      return <div>{roleName}</div>
+      return <div>{formatRoleName(roleName)}</div>
     }
   },
   {
@@ -104,36 +111,34 @@ export const columns: ColumnDef<UserWithRoleType>[] = [
         }
       }
 
-      const status = row.getValue('status') as UserStatusType
-      let classNameStatus =
-        'capitalize bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300'
-      if (status === 'Inactive') {
-        classNameStatus =
-          'bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300'
-      } else if (status === 'Blocked') {
-        classNameStatus =
-          'bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-300'
-      }
-
+      const status = row.original.status
       return (
-        <>
+        <div className='w-20'>
           <Select onValueChange={handleChangeStatus} defaultValue={status}>
             <SelectTrigger
               className='w-0 p-0 h-0 border-none shadow-none hover:shadow-none focus:shadow-none'
               hasIcon={false}
             >
-              <span className={cn([classNameStatus, 'cursor-pointer'])}>{row.getValue('status')}</span>
+              <span
+                className={classNames('text-xs font-medium me-2 px-2.5 py-0.5 rounded-full capitalize cursor-pointer', {
+                  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300': status === UserStatus.Active,
+                  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300': status === UserStatus.Inactive,
+                  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300': status === UserStatus.Blocked
+                })}
+              >
+                {formatUserStatus(status)}
+              </span>
             </SelectTrigger>
 
             <SelectContent>
               {UserStatusValues.map((val) => (
                 <SelectItem key={val} value={val}>
-                  {val}
+                  {formatUserStatus(val)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </>
+        </div>
       )
     }
   },
@@ -183,8 +188,8 @@ export const columns: ColumnDef<UserWithRoleType>[] = [
     enableHiding: true,
     filterFn: (row, columnId, value) => {
       const email = (row.original.email ?? '').toLowerCase()
-      const name = (row.original.name ?? '').toLowerCase()
-      const query = value.toLowerCase()
+      const name = removeVietnameseAccents((row.original.name ?? '').toLowerCase())
+      const query = removeVietnameseAccents(value.toLowerCase())
       return email.includes(query) || name.includes(query)
     },
     enableColumnFilter: true
@@ -195,8 +200,8 @@ function AlertDialogUserDelete({
   userDelete,
   setUserDelete
 }: {
-  userDelete: UserWithRoleType | null
-  setUserDelete: (user: UserWithRoleType | null) => void
+  userDelete: UserDetailType | null
+  setUserDelete: (user: UserDetailType | null) => void
 }) {
   const deleteUserMutation = useDeleteUserMutation()
 
@@ -244,13 +249,22 @@ export default function UserTable() {
 
   const query = useQuery()
   const page = query.get('page') ? Number(query.get('page')) : 1
+  const statusFilter = query.get('status') || ''
+  const roleFilter = query.get('role') || ''
 
   const [userIdEdit, setUserIdEdit] = useState<number | undefined>()
-  const [userChangePassword, setUserChangePassword] = useState<UserWithRoleType | null>(null)
-  const [userDelete, setUserDelete] = useState<UserWithRoleType | null>(null)
+  const [userChangePassword, setUserChangePassword] = useState<UserDetailType | null>(null)
+  const [userDelete, setUserDelete] = useState<UserDetailType | null>(null)
 
   const usersQuery = useAllUsersQuery()
   const data = usersQuery.data?.data.data || []
+
+  // Filter data based on query parameters
+  const filteredData = data.filter((user) => {
+    const matchesStatus = !statusFilter || user.status === statusFilter
+    const matchesRole = !roleFilter || user.role.name === roleFilter
+    return matchesStatus && matchesRole
+  })
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -263,7 +277,7 @@ export default function UserTable() {
   })
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -299,7 +313,7 @@ export default function UserTable() {
         <EditUser id={userIdEdit} setId={setUserIdEdit} />
         <ChangePassword userChangePassword={userChangePassword} setUserChangePassword={setUserChangePassword} />
         <AlertDialogUserDelete userDelete={userDelete} setUserDelete={setUserDelete} />
-        <div className='flex items-center py-4'>
+        <div className='flex items-center py-4 gap-4'>
           <Input
             placeholder='Lọc tên người dùng, email...'
             value={(table.getColumn('search')?.getFilterValue() as string) ?? ''}
@@ -310,7 +324,59 @@ export default function UserTable() {
             }}
             className='max-w-sm'
           />
-          <div className='ml-2 flex gap-2'></div>
+
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              const params = new URLSearchParams(window.location.search)
+              if (value && value !== 'all') {
+                params.set('status', value)
+              } else {
+                params.delete('status')
+              }
+              params.delete('page') // Reset to first page
+              navigate(`/manage/users?${params.toString()}`)
+            }}
+          >
+            <SelectTrigger className='max-w-sm'>
+              <span>{statusFilter ? formatUserStatus(statusFilter as UserStatusType) : 'Tất cả trạng thái'}</span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>Tất cả trạng thái</SelectItem>
+              {UserStatusValues.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {formatUserStatus(status)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={roleFilter}
+            onValueChange={(value) => {
+              const params = new URLSearchParams(window.location.search)
+              if (value && value !== 'all') {
+                params.set('role', value)
+              } else {
+                params.delete('role')
+              }
+              params.delete('page') // Reset to first page
+              navigate(`/manage/users?${params.toString()}`)
+            }}
+          >
+            <SelectTrigger className='max-w-sm'>
+              <span>{roleFilter ? formatRoleName(roleFilter) : 'Tất cả vai trò'}</span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>Tất cả vai trò</SelectItem>
+              {RoleNameValues.map((role) => (
+                <SelectItem key={role} value={role}>
+                  {formatRoleName(role)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <div className='ml-auto flex items-center gap-2'>
             <AddUser />
           </div>
@@ -351,8 +417,8 @@ export default function UserTable() {
         </div>
         <div className='flex items-center justify-end space-x-2 py-4'>
           <div className='text-xs text-muted-foreground py-4 flex-1 '>
-            Hiển thị <strong>{table.getPaginationRowModel().rows.length}</strong> trong <strong>{data.length}</strong>{' '}
-            kết quả
+            Hiển thị <strong>{table.getPaginationRowModel().rows.length}</strong> trong{' '}
+            <strong>{filteredData.length}</strong> kết quả
           </div>
           <div>
             <AutoPagination

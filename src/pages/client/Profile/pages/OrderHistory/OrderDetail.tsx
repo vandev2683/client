@@ -4,26 +4,38 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { Package, Clock, UserPen } from 'lucide-react'
-import type { GetOrderDetailResType } from '@/schemaValidations/order.schema'
+import { Package, Clock, UserPen, PackageMinus, EyeClosed, EyeOff } from 'lucide-react'
 import { OrderStatus } from '@/constants/order'
 import classNames from 'classnames'
-import { formatCurrency, formatDateTimeToLocaleString } from '@/lib/utils'
+import { formatCurrency, formatDateTimeToLocaleString, formatOrderStatus, parseVariantInfo } from '@/lib/utils'
 import { PaymentMethod } from '@/constants/payment'
 import Config from '@/constants/config'
 import { CouponDiscountType } from '@/constants/coupon'
-import OrderReview from './OrderReview'
+import type { OrderDetailType } from '@/schemaValidations/order.schema'
+import AddReview from './AddReview'
+import EditReview from './EditReview'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
-export default function OrderDetail({ order, children }: { order: GetOrderDetailResType; children: ReactNode }) {
+export default function OrderDetail({ order, children }: { order: OrderDetailType; children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const productNameSet = new Set(order.orderItems.map((item) => item.productName))
 
   if (!order.user || !order.deliveryAddress)
-    return <div className='text-red-500'>Không tìm thấy thông tin đơn hàng.</div>
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <EyeOff className='w-4 h-4 mx-3' />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p className='text-sm'>Đơn hàng không có thông tin người dùng </p>
+          <p className='text-sm'>hoặc địa chỉ giao hàng</p>
+        </TooltipContent>
+      </Tooltip>
+    )
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className='min-w-[55vw] min-h-[80vh] max-h-[100vh] overflow-y-auto'>
+      <DialogContent className='min-w-[55vw] min-h-[80vh] max-h-[100vh] overflow-y-auto' aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className='text-xl font-semibold'>Chi Tiết Đơn Hàng #{order.id}</DialogTitle>
         </DialogHeader>
@@ -59,7 +71,7 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
                     {order.deliveryAddress.district.name}, {order.deliveryAddress.province.name}
                   </p>
                   <p>
-                    Ghi chú: <span className='font-semibold'>{order.note ? order.note : '...'}</span>
+                    Ghi chú: <span>{order.note ? order.note : 'Không có'}</span>
                   </p>
                 </div>
               </div>
@@ -87,7 +99,7 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
                         order.status === OrderStatus.Cancelled
                     })}
                   >
-                    {order.status}
+                    {formatOrderStatus(order.status)}
                   </span>
                 </div>
                 <div className='flex items-center justify-between'>
@@ -113,14 +125,14 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
                 </div>
                 <div className='flex items-center justify-between'>
                   <span className='text-sm text-muted-foreground'>Tổng tiền:</span>
-                  <span className='text-lg font-bold text-primary'>{formatCurrency(order.totalAmount)}</span>
+                  <span className='text-md font-bold text-primary'>{formatCurrency(order.totalAmount)}</span>
                 </div>
                 <div className='flex items-center justify-between'>
                   <div className='flex flex-col'>
                     <span className='text-sm text-muted-foreground'>Phí:</span>
                     <span className='text-sm text-muted-foreground'>({formatCurrency(30000)} Ship + 10% VAT)</span>
                   </div>
-                  <span className='text-lg font-bold text-primary'>{formatCurrency(order.feeAmount)}</span>
+                  <span className='text-md font-bold text-primary'>{formatCurrency(order.feeAmount)}</span>
                 </div>
                 <div className='flex items-center justify-between'>
                   <span className='text-sm text-muted-foreground'>
@@ -129,10 +141,10 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
                       ? `(${order.coupon.discountType === CouponDiscountType.Amount ? `-${formatCurrency(order.coupon.discountValue)}` : `-${order.coupon.discountValue}%`})`
                       : ''}
                   </span>
-                  <span className='text-lg font-bold text-primary'>{formatCurrency(order.discountAmount)}</span>
+                  <span className='text-md font-bold text-primary'>{formatCurrency(order.discountAmount)}</span>
                 </div>
                 <div className='flex items-center justify-between'>
-                  <span className='text-sm text-muted-foreground'>Tổng tiền:</span>
+                  <span className='text-sm text-muted-foreground'>Thanh toán:</span>
                   <span className='text-lg font-bold text-primary'>{formatCurrency(order.finalAmount)}</span>
                 </div>
                 <span className='text-gray-800 text-xs'>
@@ -155,14 +167,19 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
               {Array.from(productNameSet).map((productName) => {
                 const itemsForProduct = order.orderItems.filter((item) => item.productName === productName)
                 const firstItem = itemsForProduct[0]
+                const review = order.reviews.find((review) => review.productId === firstItem.productId)
 
                 return (
-                  <AccordionItem key={productName} value={productName} className='border rounded-lg px-4'>
+                  <AccordionItem key={productName} value={productName} className='border rounded-lg px-4 last:border-b'>
                     <div className='flex items-center justify-between'>
                       <AccordionTrigger hasIcon={false}>
                         <div className='flex items-center gap-4 flex-1'>
                           <img
-                            src={firstItem.variant.product.images[0] || firstItem.thumbnail || Config.ImageBaseUrl}
+                            src={
+                              (firstItem.variant && firstItem.variant?.product?.images[0]) ||
+                              firstItem.thumbnail ||
+                              Config.ImageBaseUrl
+                            }
                             alt={firstItem.productName}
                             className='w-12 h-12 rounded-md object-cover border'
                           />
@@ -174,11 +191,23 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
                           </div>
                         </div>
                       </AccordionTrigger>
-                      <OrderReview productId={firstItem.productId as number} orderId={order.id}>
-                        <Button variant='ghost' type='button' title='Chỉnh sửa đánh giá'>
-                          <UserPen className='w-5 h-5' />
-                        </Button>
-                      </OrderReview>
+                      {order.status === OrderStatus.Completed && (
+                        <>
+                          {review ? (
+                            <EditReview reviewId={review.id}>
+                              <Button variant='ghost' type='button' title='Chỉnh sửa đánh giá'>
+                                <UserPen className='w-5 h-5' />
+                              </Button>
+                            </EditReview>
+                          ) : (
+                            <AddReview productId={firstItem.productId as number} orderId={order.id}>
+                              <Button variant='ghost' type='button' title='Chỉnh sửa đánh giá'>
+                                <UserPen className='w-5 h-5' />
+                              </Button>
+                            </AddReview>
+                          )}
+                        </>
+                      )}
                     </div>
                     <AccordionContent className='pt-4'>
                       <div className='space-y-6'>
@@ -194,7 +223,26 @@ export default function OrderDetail({ order, children }: { order: GetOrderDetail
                                 className='flex items-center justify-between p-3 bg-muted/60 rounded-md'
                               >
                                 <div>
-                                  <p className='text-sm font-medium'>{item.variantValue}</p>
+                                  <div className='mt-1 flex flex-col items-start'>
+                                    {(() => {
+                                      const variantInfo = parseVariantInfo(
+                                        item.variantValue,
+                                        item.variant?.product?.variantsConfig || []
+                                      )
+                                      if (!variantInfo || variantInfo.length === 0) {
+                                        return (
+                                          <span className='text-[0.8rem] text-gray-600'>
+                                            Type: {item.variant?.value}
+                                          </span>
+                                        )
+                                      }
+                                      return variantInfo.map((info) => (
+                                        <span key={info.type} className='text-[0.8rem] text-gray-600'>
+                                          {info.type}: {info.value}
+                                        </span>
+                                      ))
+                                    })()}
+                                  </div>
                                   <p className='text-xs text-muted-foreground'>Số lượng: {item.quantity}</p>
                                 </div>
                                 <div className='text-right'>

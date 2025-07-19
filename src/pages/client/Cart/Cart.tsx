@@ -1,34 +1,47 @@
 import { useAppContext } from '@/components/AppProvider'
 import QuantityController from '@/components/QuantityController'
 import { Button } from '@/components/ui/button'
-import { formatCurrency, generateNameId, handleError } from '@/lib/utils'
-import { useAllCartItemsQuery, useDeleteCartItemMutation, useUpdateCartItemMutation } from '@/queries/useCart'
+import { formatCurrency, generateNameId, handleError, parseVariantInfo } from '@/lib/utils'
 import { useEffect, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { produce } from 'immer'
 import keyBy from 'lodash/keyBy'
 import type { CartItemDetailType } from '@/schemaValidations/cart.schema'
 import Config from '@/constants/config'
+import { useAllCartItemsQuery, useDeleteCartItemsMutation, useUpdateCartItemMutation } from '@/queries/useCart'
 
 export default function Cart() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const cartItemId = location.state?.cartItemId as number | undefined
   const { extendedCartItems, setExtendedCartItems } = useAppContext()
 
-  const cartItemsQuery = useAllCartItemsQuery()
-  const cartItems = cartItemsQuery.data?.data.data
+  const cartItemsQuery = useAllCartItemsQuery({ enabled: true })
+  const cartItems = cartItemsQuery.data?.data.data || []
+
   useEffect(() => {
     if (cartItemsQuery.data) {
       const cartItems = cartItemsQuery.data.data.data
       setExtendedCartItems((prev) => {
         const extendedCartItemsObj = keyBy(prev, 'id') // keyBy tạo ra một object với key là value của object truyền vào. keyBy(prev, 'id') sẽ tạo ra một object với key là id. id: {...item}
-        return cartItems.map((item) => ({
-          ...item,
-          checked: Boolean(extendedCartItemsObj[item.id]?.checked),
-          disabled: false
-        }))
+
+        return cartItems.map((item) => {
+          const isCartItemBuyNow = cartItemId === item.id
+          return {
+            ...item,
+            checked: isCartItemBuyNow || Boolean(extendedCartItemsObj[item.id]?.checked),
+            disabled: false
+          }
+        })
       })
     }
-  }, [cartItemsQuery.data, setExtendedCartItems])
+  }, [cartItemsQuery.data, setExtendedCartItems, cartItemId])
+
+  useEffect(() => {
+    return () => {
+      history.replaceState(null, '')
+    }
+  }, [])
 
   const isAllChecked = useMemo(() => extendedCartItems.every((item) => item.checked), [extendedCartItems])
   const cartItemsChecked = useMemo(() => extendedCartItems.filter((item) => item.checked), [extendedCartItems])
@@ -83,7 +96,7 @@ export default function Cart() {
     }
   }
 
-  const deleteCartItemMutation = useDeleteCartItemMutation()
+  const deleteCartItemMutation = useDeleteCartItemsMutation()
   const handleDeleteCartItem = async (cartItemId: number) => {
     if (deleteCartItemMutation.isPending) return
     try {
@@ -117,7 +130,7 @@ export default function Cart() {
   }
 
   return (
-    <div className='bg-neutral-100 py-16'>
+    <div className='bg-neutral-50 py-4'>
       <div className='max-w-6xl mx-auto px-4'>
         {extendedCartItems.length > 0 ? (
           <>
@@ -150,7 +163,7 @@ export default function Cart() {
                   {extendedCartItems?.map((item, index) => (
                     <div
                       key={item.id}
-                      className='mb-5 grid grid-cols-12 rounded-sm border border-gray-200 bg-white py-5 px-4 text-center text-sm text-gray-500 first:mt-0'
+                      className='mb-5 grid grid-cols-12 rounded-sm border border-gray-200 bg-white py-5 px-4 text-center text-sm text-gray-500 first:mt-0 items-center'
                     >
                       <div className='col-span-6'>
                         <div className='flex'>
@@ -163,7 +176,7 @@ export default function Cart() {
                             />
                           </div>
                           <div className='flex-grow'>
-                            <div className='flex items-center'>
+                            <div className='flex items-center gap-3'>
                               <Link
                                 className='h-20 w-20 flex-shrink-0'
                                 to={`/${generateNameId({
@@ -176,17 +189,34 @@ export default function Cart() {
                                   src={item.variant.thumbnail || item.variant.product.images[0] || Config.ImageBaseUrl}
                                 />
                               </Link>
-                              <div className='flex-grow px-2 pt-1 pb-2'>
+                              <div className='px-2 pt-1 pb-2 flex flex-col items-start'>
                                 <Link
                                   to={`/${generateNameId({
                                     name: item.variant.product.name,
                                     id: item.variant.product.id
                                   })}`}
-                                  className='line-clamp-2'
+                                  className='line-clamp-2 text-lg font-semibold text-gray-900'
                                 >
                                   {item.variant.product.name}
                                 </Link>
-                                <span>{item.variant.value}</span>
+                                <div className='mt-1 flex flex-col items-start'>
+                                  {(() => {
+                                    const variantInfo = parseVariantInfo(
+                                      item.variant.value,
+                                      item.variant.product.variantsConfig
+                                    )
+                                    if (!variantInfo || variantInfo.length === 0) {
+                                      return (
+                                        <span className='text-[0.8rem] text-gray-600'>Type: {item.variant.value}</span>
+                                      )
+                                    }
+                                    return variantInfo.map((info) => (
+                                      <span key={info.type} className='text-[0.8rem] text-gray-600'>
+                                        {info.type}: {info.value}
+                                      </span>
+                                    ))
+                                  })()}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -195,32 +225,29 @@ export default function Cart() {
                       <div className='col-span-6'>
                         <div className='grid grid-cols-5 items-center'>
                           <div className='col-span-2'>
-                            <div className='flex items-center justify-center'>
+                            <div className=''>
                               <span className='ml-3'>{formatCurrency(item.variant.price)}</span>
                             </div>
                           </div>
                           <div className='col-span-1'>
-                            <div className=' flex flex-col gap-4'>
-                              <QuantityController
-                                max={item.variant.stock}
-                                value={item.quantity}
-                                onIncrease={(value) => handleQuantityChange(index, value, value <= item.variant.stock)}
-                                onDecrease={(value) => handleQuantityChange(index, value, value >= 1)}
-                                onType={handleTypeQuantity(index)}
-                                onFocusOut={(value) =>
-                                  handleQuantityChange(
-                                    index,
-                                    value,
-                                    value >= 1 &&
-                                      value <= item.variant.stock &&
-                                      value !== (cartItems as CartItemDetailType[])[index].quantity
-                                  )
-                                }
-                                disabled={item.disabled}
-                                classNameWrapper='flex items-center'
-                              />
-                              <span className='text-xs'>{item.variant.stock} sản phẩm có sẵn</span>
-                            </div>
+                            <QuantityController
+                              max={item.variant.stock}
+                              value={item.quantity}
+                              onIncrease={(value) => handleQuantityChange(index, value, value <= item.variant.stock)}
+                              onDecrease={(value) => handleQuantityChange(index, value, value >= 1)}
+                              onType={handleTypeQuantity(index)}
+                              onFocusOut={(value) =>
+                                handleQuantityChange(
+                                  index,
+                                  value,
+                                  value >= 1 &&
+                                    value <= item.variant.stock &&
+                                    value !== (cartItems as CartItemDetailType[])[index].quantity
+                                )
+                              }
+                              disabled={item.disabled}
+                              classNameWrapper='flex items-center'
+                            />
                           </div>
                           <div className='col-span-1'>
                             <span className='text-primary'>{formatCurrency(item.variant.price * item.quantity)}</span>
@@ -283,11 +310,11 @@ export default function Cart() {
         ) : (
           <div className='text-center'>
             <img src={Config.NoProductImage} alt='no purchase' className='mx-auto h-24 w-24' />
-            <div className='mt-5 font-bold text-gray-400'>Giỏ hàng của bạn còn trống</div>
-            <div className='mt-5 text-center'>
+            <div className='mt-5 font-semibold text-gray-600'>Giỏ hàng của bạn còn trống</div>
+            <div className='mt-8 text-center'>
               <Link
                 to='/'
-                className=' rounded-sm bg-orange px-10 py-2  uppercase text-white transition-all hover:bg-orange/80'
+                className='font-semibold rounded-sm bg-primary text-white px-10 py-2 uppercase transition-all hover:bg-primary/80'
               >
                 Mua ngay
               </Link>

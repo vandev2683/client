@@ -1,19 +1,18 @@
-import { useMemo, useState, type ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { Package, Clock, UserPen, Star } from 'lucide-react'
-import type { GetOrderDetailResType } from '@/schemaValidations/order.schema'
-import { OrderStatus } from '@/constants/order'
-import classNames from 'classnames'
+import { Package, Clock, Star } from 'lucide-react'
 import { formatCurrency, formatDateTimeToLocaleString } from '@/lib/utils'
 import { PaymentMethod } from '@/constants/payment'
 import Config from '@/constants/config'
 import { CouponDiscountType } from '@/constants/coupon'
 import { useOrderDetailQuery } from '@/queries/useOrder'
 import ChangeStatus from './ChangeStatus'
+import { orderSocket, reviewSocket } from '@/lib/sockets'
+import { useEffect } from 'react'
+import type { MessageResType } from '@/schemaValidations/response.schema'
+import { useAppContext } from '@/components/AppProvider'
 
 export default function OrderDetail({
   orderId,
@@ -22,9 +21,47 @@ export default function OrderDetail({
   orderId?: number | undefined
   setOrderId: (id: number | undefined) => void
 }) {
-  const orderDetailQuery = useOrderDetailQuery(orderId)
-  const order = orderDetailQuery.data?.data
-  console.log('Order Detail:', order)
+  const { isAuth } = useAppContext()
+  const { data, refetch } = useOrderDetailQuery(orderId)
+  const order = data?.data
+
+  useEffect(() => {
+    if (isAuth) {
+      reviewSocket.connect()
+      orderSocket.connect()
+    } else {
+      reviewSocket.disconnect()
+      orderSocket.disconnect()
+      return
+    }
+
+    reviewSocket.on('recieved-review', (data: MessageResType) => {
+      setTimeout(() => {
+        refetch()
+      }, 10)
+    })
+
+    orderSocket.on('changed-order-status', (data: { message: string }) => {
+      setTimeout(() => {
+        refetch()
+      }, 10)
+    })
+
+    orderSocket.on('recieved-order-payment', (data: MessageResType) => {
+      setTimeout(() => {
+        refetch()
+      }, 10)
+    })
+
+    return () => {
+      orderSocket.off('recieved-review')
+      orderSocket.off('changed-order-status')
+      orderSocket.off('recieved-order-payment')
+      orderSocket.disconnect()
+      reviewSocket.disconnect()
+    }
+  }, [isAuth, refetch])
+
   if (!order) return null
 
   const productNameSet = new Set(order.orderItems.map((item) => item.productName))
@@ -64,7 +101,7 @@ export default function OrderDetail({
         setOrderId(undefined)
       }}
     >
-      <DialogContent className='min-w-[55vw] min-h-[80vh] max-h-[100vh] overflow-y-auto'>
+      <DialogContent className='min-w-[55vw] min-h-[80vh] max-h-[100vh] overflow-y-auto' aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle className='text-xl font-semibold'>Chi Tiết Đơn Hàng #{order.id}</DialogTitle>
         </DialogHeader>
@@ -114,7 +151,6 @@ export default function OrderDetail({
               <div className='p-4 border rounded-lg space-y-3'>
                 <div className='flex items-center justify-between'>
                   <span className='text-sm text-muted-foreground'>Trạng thái:</span>
-
                   <ChangeStatus order={order} />
                 </div>
                 <div className='flex items-center justify-between'>
@@ -140,14 +176,14 @@ export default function OrderDetail({
                 </div>
                 <div className='flex items-center justify-between'>
                   <span className='text-sm text-muted-foreground'>Tổng tiền:</span>
-                  <span className='text-sm font-bold text-primary'>{formatCurrency(order.totalAmount)}</span>
+                  <span className='text-md font-bold text-primary'>{formatCurrency(order.totalAmount)}</span>
                 </div>
                 <div className='flex items-center justify-between'>
                   <div className='flex flex-col'>
                     <span className='text-sm text-muted-foreground'>Phí:</span>
                     <span className='text-sm text-muted-foreground'>({formatCurrency(30000)} Ship + 10% VAT)</span>
                   </div>
-                  <span className='text-sm font-bold text-primary'>{formatCurrency(order.feeAmount)}</span>
+                  <span className='text-md font-bold text-primary'>{formatCurrency(order.feeAmount)}</span>
                 </div>
                 <div className='flex items-center justify-between'>
                   <span className='text-sm text-muted-foreground'>
@@ -156,10 +192,10 @@ export default function OrderDetail({
                       ? `(${order.coupon.discountType === CouponDiscountType.Amount ? `-${formatCurrency(order.coupon.discountValue)}` : `-${order.coupon.discountValue}%`})`
                       : ''}
                   </span>
-                  <span className='text-sm font-bold text-primary'>{formatCurrency(order.discountAmount)}</span>
+                  <span className='text-md font-bold text-primary'>{formatCurrency(order.discountAmount)}</span>
                 </div>
                 <div className='flex items-center justify-between'>
-                  <span className='text-sm text-muted-foreground'>Tổng tiền:</span>
+                  <span className='text-sm text-muted-foreground'>Thanh toán:</span>
                   <span className='text-lg font-bold text-primary'>{formatCurrency(order.finalAmount)}</span>
                 </div>
                 <span className='text-gray-800 text-xs'>
@@ -189,7 +225,11 @@ export default function OrderDetail({
                       <AccordionTrigger hasIcon={false}>
                         <div className='flex items-center gap-4 flex-1'>
                           <img
-                            src={firstItem.variant.product.images[0] || firstItem.thumbnail || Config.ImageBaseUrl}
+                            src={
+                              (firstItem.variant && firstItem.variant.product?.images[0]) ||
+                              firstItem.thumbnail ||
+                              Config.ImageBaseUrl
+                            }
                             alt={firstItem.productName}
                             className='w-12 h-12 rounded-md object-cover border'
                           />

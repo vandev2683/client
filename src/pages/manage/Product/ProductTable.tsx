@@ -38,17 +38,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AutoPagination from '@/components/AutoPagination'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { cn, formatCurrency, handleError } from '@/lib/utils'
-import AddProduct from './AddProduct'
-import { ProductStatusValues, type ProductStatusType } from '@/constants/product'
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import { formatCurrency, formatProductStatus, formatTypeProduct, handleError } from '@/lib/utils'
 import {
-  useAllProductsQuery,
-  useChangeProductStatusMutation,
-  useDeleteProductMutation
-} from '@/queries/useManageProduct'
+  ProductStatus,
+  ProductStatusValues,
+  TypeProductValues,
+  type ProductStatusType,
+  type TypeProductType
+} from '@/constants/product'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
+import { useAllProductsQuery, useChangeProductStatusMutation, useDeleteProductMutation } from '@/queries/useProduct'
 import Config from '@/constants/config'
 import EditProduct from './EditProduct'
+import classNames from 'classnames'
+import AddProduct from './AddProduct'
+import { productSocket } from '@/lib/sockets'
+import type { MessageResType } from '@/schemaValidations/response.schema'
+import { useAppContext } from '@/components/AppProvider'
 
 const ProductContext = createContext<{
   productIdEdit: number | undefined
@@ -73,19 +79,40 @@ export const columns: ColumnDef<ProductType>[] = [
           <img
             src={Config.ImageBaseUrl}
             alt={row.getValue('name') as string}
-            className='w-24 h-24 object-cover rounded-md ml-4'
+            className='w-24 h-24 object-contain rounded-md ml-4'
           />
         )
       }
       return (
-        <img src={images[0]} alt={row.getValue('name') as string} className='w-24 h-24 object-cover rounded-md ml-4' />
+        <img
+          src={images[0]}
+          alt={row.getValue('name') as string}
+          className='w-24 h-24 object-contain rounded-md ml-4'
+        />
       )
     }
   },
   {
     accessorKey: 'name',
     header: 'Name',
-    cell: ({ row }) => <div className='capitalize'>{row.getValue('name')}</div>
+    cell: ({ row }) => {
+      const name = row.getValue('name') as string
+      return (
+        <div className='max-w-[250px]'>
+          <p
+            className='overflow-hidden text-ellipsis whitespace-nowrap [&>*]:inline [&>*]:whitespace-nowrap [&>*]:overflow-hidden [&>*]:text-ellipsis'
+            title={name}
+          >
+            {name}
+          </p>
+        </div>
+      )
+    }
+  },
+  {
+    accessorKey: 'type',
+    header: 'Type',
+    cell: ({ row }) => <div className='capitalize'>{formatTypeProduct(row.getValue('type'))}</div>
   },
   {
     accessorKey: 'basePrice',
@@ -116,38 +143,36 @@ export const columns: ColumnDef<ProductType>[] = [
       }
 
       const status = row.original.status
-      let classNameStatus =
-        'capitalize bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300'
-      if (status === 'OutOfStock') {
-        classNameStatus =
-          'bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300'
-      } else if (status === 'Pending') {
-        classNameStatus =
-          'bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-300'
-      } else if (status === 'Hidden') {
-        classNameStatus =
-          'bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300'
-      }
-
       return (
-        <>
-          <Select onValueChange={handleChangeStatus} defaultValue={status}>
+        <div className='w-[60px]'>
+          <Select onValueChange={handleChangeStatus} defaultValue={status} value={row.getValue('status')}>
             <SelectTrigger
               className='w-0 p-0 h-0 border-none shadow-none hover:shadow-none focus:shadow-none'
               hasIcon={false}
             >
-              <span className={cn([classNameStatus, 'cursor-pointer'])}>{row.original.status}</span>
+              <span
+                className={classNames('cursor-pointer text-xs font-medium me-2 px-2.5 py-0.5 rounded-full capitalize', {
+                  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300':
+                    status === ProductStatus.Available,
+                  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300': status === ProductStatus.OutOfStock,
+                  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300':
+                    status === ProductStatus.Pending,
+                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300': status === ProductStatus.Hidden
+                })}
+              >
+                {formatProductStatus(status)}
+              </span>
             </SelectTrigger>
 
             <SelectContent>
               {ProductStatusValues.map((status) => (
                 <SelectItem key={status} value={status}>
-                  {status}
+                  {formatProductStatus(status)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </>
+        </div>
       )
     }
   },
@@ -248,16 +273,53 @@ function AlertDialogproductDelete({
 
 const PAGE_SIZE = 10
 export default function ProductTable() {
+  const { isAuth } = useAppContext()
   const navigate = useNavigate()
 
   const query = useQuery()
   const page = query.get('page') ? Number(query.get('page')) : 1
+  const typeFilter = query.get('type') || ''
+  const statusFilter = query.get('status') || ''
 
   const [productIdEdit, setProductIdEdit] = useState<number | undefined>()
   const [productDelete, setProductDelete] = useState<ProductType | null>(null)
 
-  const productsQuery = useAllProductsQuery()
-  const data = productsQuery.data?.data.data || []
+  const { data: products, refetch } = useAllProductsQuery()
+  const data = products?.data.data || []
+
+  useEffect(() => {
+    if (isAuth) {
+      productSocket.connect()
+    } else {
+      productSocket.disconnect()
+      return
+    }
+
+    productSocket.on('sended-product', (data: MessageResType) => {
+      setTimeout(() => {
+        refetch()
+      }, 10)
+    })
+
+    productSocket.on('updated-product', (data: MessageResType) => {
+      setTimeout(() => {
+        refetch()
+      }, 10)
+    })
+
+    return () => {
+      productSocket.off('sended-product')
+      productSocket.off('updated-product')
+      productSocket.disconnect()
+    }
+  }, [isAuth, refetch])
+
+  // Filter data based on query parameters
+  const filteredData = data.filter((product) => {
+    const matchesType = typeFilter === 'all' || !typeFilter || product.type === typeFilter
+    const matchesStatus = statusFilter === 'all' || !statusFilter || product.status === statusFilter
+    return matchesType && matchesStatus
+  })
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -270,7 +332,7 @@ export default function ProductTable() {
   })
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -303,7 +365,7 @@ export default function ProductTable() {
       <div className='w-full'>
         <EditProduct id={productIdEdit} setId={setProductIdEdit} />
         <AlertDialogproductDelete productDelete={productDelete} setProductDelete={setProductDelete} />
-        <div className='flex items-center py-4'>
+        <div className='flex items-center py-4 gap-4'>
           <Input
             placeholder='Lọc tên, mô tả...'
             value={(table.getColumn('search')?.getFilterValue() as string) ?? ''}
@@ -314,6 +376,59 @@ export default function ProductTable() {
             }}
             className='max-w-sm'
           />
+
+          <Select
+            value={typeFilter}
+            onValueChange={(value) => {
+              const params = new URLSearchParams(window.location.search)
+              if (value && value !== 'all') {
+                params.set('type', value)
+              } else {
+                params.delete('type')
+              }
+              params.delete('page') // Reset to first page
+              navigate(`/manage/products?${params.toString()}`)
+            }}
+          >
+            <SelectTrigger className='max-w-sm'>
+              <span>{typeFilter ? formatTypeProduct(typeFilter as TypeProductType) : 'Tất cả loại'}</span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>Tất cả tloại</SelectItem>
+              {TypeProductValues.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {formatTypeProduct(type)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              const params = new URLSearchParams(window.location.search)
+              if (value && value !== 'all') {
+                params.set('status', value)
+              } else {
+                params.delete('status')
+              }
+              params.delete('page') // Reset to first page
+              navigate(`/manage/products?${params.toString()}`)
+            }}
+          >
+            <SelectTrigger className='max-w-sm'>
+              <span>{statusFilter ? formatProductStatus(statusFilter as ProductStatusType) : 'Tất cả trạng thái'}</span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>Tất cả trạng thái</SelectItem>
+              {ProductStatusValues.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {formatProductStatus(status)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <div className='ml-auto flex items-center gap-2'>
             <AddProduct />
           </div>
@@ -325,7 +440,7 @@ export default function ProductTable() {
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id} className={header.id === 'images' ? 'pl-6' : ''}>
+                      <TableHead key={header.id} className={header.id === 'images' ? 'pl-6 w-[150px]' : ''}>
                         {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
                     )
@@ -354,8 +469,8 @@ export default function ProductTable() {
         </div>
         <div className='flex items-center justify-end space-x-2 py-4'>
           <div className='text-xs text-muted-foreground py-4 flex-1 '>
-            Hiển thị <strong>{table.getPaginationRowModel().rows.length}</strong> trong <strong>{data.length}</strong>{' '}
-            kết quả
+            Hiển thị <strong>{table.getPaginationRowModel().rows.length}</strong> trong{' '}
+            <strong>{filteredData.length}</strong> kết quả
           </div>
           <div>
             <AutoPagination

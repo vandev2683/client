@@ -33,16 +33,18 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import AutoPagination from '@/components/AutoPagination'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { cn, formatDateTimeToLocaleString, handleError, formatCurrency } from '@/lib/utils'
+import { cn, formatDateTimeToLocaleString, handleError, formatCurrency, formatCouponStatus } from '@/lib/utils'
 import AddCoupon from './AddCoupon'
 import type { CouponType } from '@/schemaValidations/coupon.schema'
 import { useAllCouponsQuery, useChangeCouponStatusMutation, useDeleteCouponMutation } from '@/queries/useCoupon'
 import EditCoupon from './EditCoupon'
-import { CouponDiscountType } from '@/constants/coupon'
+import { CouponDiscountType, CouponDiscountTypeValues } from '@/constants/coupon'
+import classNames from 'classnames'
 
 const CouponContext = createContext<{
   couponIdEdit: number | undefined
@@ -106,17 +108,16 @@ export const columns: ColumnDef<CouponType>[] = [
         }
       }
 
-      const status = row.getValue('isActive') as boolean
-      let classNameStatus =
-        'capitalize bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300'
-      if (status === false) {
-        classNameStatus =
-          'bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300'
-      }
-
+      const isActive = row.original.isActive
       return (
-        <span className={cn([classNameStatus, 'cursor-pointer'])} onClick={handleChangeStatus}>
-          {status ? 'active' : 'Inactive'}
+        <span
+          className={classNames('text-xs font-medium me-2 px-2.5 py-0.5 rounded-full capitalize cursor-pointer', {
+            'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300': isActive,
+            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300': !isActive
+          })}
+          onClick={handleChangeStatus}
+        >
+          {formatCouponStatus(isActive)}
         </span>
       )
     }
@@ -239,12 +240,21 @@ export default function CouponTable() {
 
   const query = useQuery()
   const page = query.get('page') ? Number(query.get('page')) : 1
+  const statusFilter = query.get('status') || ''
+  const discountTypeFilter = query.get('discountType') || ''
 
   const [couponIdEdit, setCouponIdEdit] = useState<number | undefined>()
   const [couponDelete, setCouponDelete] = useState<CouponType | null>(null)
 
   const couponsQuery = useAllCouponsQuery()
   const data = couponsQuery.data?.data.data || []
+
+  // Filter data based on query parameters
+  const filteredData = data.filter((coupon) => {
+    const matchesStatus = !statusFilter || (statusFilter === 'active' ? coupon.isActive : !coupon.isActive)
+    const matchesDiscountType = !discountTypeFilter || coupon.discountType === discountTypeFilter
+    return matchesStatus && matchesDiscountType
+  })
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -257,7 +267,7 @@ export default function CouponTable() {
   })
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -290,7 +300,7 @@ export default function CouponTable() {
       <div className='w-full'>
         <EditCoupon id={couponIdEdit} setId={setCouponIdEdit} />
         <AlertDialogTagDelete couponDelete={couponDelete} setCouponDelete={setCouponDelete} />
-        <div className='flex items-center py-4'>
+        <div className='flex items-center py-4 gap-4'>
           <Input
             placeholder='Lọc mã giảm giá, %...'
             value={(table.getColumn('search')?.getFilterValue() as string) ?? ''}
@@ -301,6 +311,68 @@ export default function CouponTable() {
             }}
             className='max-w-sm'
           />
+
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              const params = new URLSearchParams(window.location.search)
+              if (value && value !== 'all') {
+                params.set('status', value)
+              } else {
+                params.delete('status')
+              }
+              params.delete('page') // Reset to first page
+              navigate(`/manage/coupons?${params.toString()}`)
+            }}
+          >
+            <SelectTrigger className='max-w-sm'>
+              <span>
+                {statusFilter === 'active'
+                  ? 'Đang hoạt động'
+                  : statusFilter === 'inactive'
+                    ? 'Không hoạt động'
+                    : 'Tất cả trạng thái'}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>Tất cả trạng thái</SelectItem>
+              <SelectItem value='active'>Đang hoạt động</SelectItem>
+              <SelectItem value='inactive'>Không hoạt động</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={discountTypeFilter}
+            onValueChange={(value) => {
+              const params = new URLSearchParams(window.location.search)
+              if (value && value !== 'all') {
+                params.set('discountType', value)
+              } else {
+                params.delete('discountType')
+              }
+              params.delete('page') // Reset to first page
+              navigate(`/manage/coupons?${params.toString()}`)
+            }}
+          >
+            <SelectTrigger className='max-w-sm'>
+              <span>
+                {discountTypeFilter === CouponDiscountType.Percent
+                  ? 'Phần trăm'
+                  : discountTypeFilter === CouponDiscountType.Amount
+                    ? 'Số tiền'
+                    : 'Tất cả loại giảm giá'}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>Tất cả loại giảm giá</SelectItem>
+              {CouponDiscountTypeValues.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type === CouponDiscountType.Percent ? 'Phần trăm' : 'Số tiền'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <div className='ml-auto flex items-center gap-2'>
             <AddCoupon />
           </div>
@@ -341,8 +413,8 @@ export default function CouponTable() {
         </div>
         <div className='flex items-center justify-end space-x-2 py-4'>
           <div className='text-xs text-muted-foreground py-4 flex-1 '>
-            Hiển thị <strong>{table.getPaginationRowModel().rows.length}</strong> trong <strong>{data.length}</strong>{' '}
-            kết quả
+            Hiển thị <strong>{table.getPaginationRowModel().rows.length}</strong> trong{' '}
+            <strong>{filteredData.length}</strong> kết quả
           </div>
           <div>
             <AutoPagination

@@ -19,7 +19,7 @@ export default function UserActions() {
   const { isAuth, profile, setProfile } = useAppContext()
   const refreshToken = getRefreshTokenFromLocalStorage()
 
-  const cartItemsQuery = useAllCartItemsQuery()
+  const cartItemsQuery = useAllCartItemsQuery({ enabled: Boolean(refreshToken) })
   const totalCartItems = cartItemsQuery.data?.data.totalItems || 0
 
   const logoutMutation = useLogoutMutation()
@@ -31,7 +31,8 @@ export default function UserActions() {
       clearLocalStorage()
       toast.success('Đăng xuất thành công')
     } catch (error) {
-      handleError(error)
+      setProfile(null)
+      clearLocalStorage()
     }
   }
 

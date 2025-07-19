@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import { cn, handleError } from '@/lib/utils'
+import { cn, formatCouponDiscountType, formatCouponStatus, handleError } from '@/lib/utils'
 import TinyEditor from '@/components/TinyEditor'
 import { CreateCouponBodySchema, type CreateCouponBodyType } from '@/schemaValidations/coupon.schema'
 import { useCreateCouponMutation } from '@/queries/useCoupon'
@@ -137,7 +137,7 @@ export default function AddCoupon() {
                           <SelectContent>
                             {CouponDiscountTypeValues.map((value) => (
                               <SelectItem key={value} value={value}>
-                                {value}
+                                {formatCouponDiscountType(value)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -327,11 +327,11 @@ export default function AddCoupon() {
                         >
                           <div className='flex items-center space-x-2'>
                             <RadioGroupItem value='active' id='active' />
-                            <Label htmlFor='active'>Kích hoạt ngay</Label>
+                            <Label htmlFor='active'>{formatCouponStatus(true)}</Label>
                           </div>
                           <div className='flex items-center space-x-2'>
                             <RadioGroupItem value='inactive' id='inactive' />
-                            <Label htmlFor='inactive'>Chưa kích hoạt</Label>
+                            <Label htmlFor='inactive'>{formatCouponStatus(false)}</Label>
                           </div>
                         </RadioGroup>
                         <FormMessage />
@@ -348,7 +348,7 @@ export default function AddCoupon() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='description'>Mô tả</Label>
                       <div className='col-span-3 w-full space-y-2 '>
-                        <TinyEditor value={field.value} onChange={field.onChange} />
+                        <TinyEditor value={field.value} onChange={field.onChange} h={200} />
                         <FormMessage />
                       </div>
                     </div>

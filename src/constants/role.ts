@@ -8,4 +8,4 @@ export const RoleName = {
 
 export const RoleNameValues = Object.values(RoleName)
 
-export type RoleNameType = (typeof RoleNameValues)[number]
+export type RoleNameType = (typeof RoleName)[keyof typeof RoleName]

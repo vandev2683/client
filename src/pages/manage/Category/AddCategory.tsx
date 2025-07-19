@@ -109,7 +109,7 @@ export default function AddCategory() {
                       <Label htmlFor='thumbnail'>Thumbnail</Label>
                       <div className='col-span-3 w-full space-y-2'>
                         <div className='flex gap-2 items-start justify-start'>
-                          <Avatar className='aspect-square w-[120px] h-[100px] rounded-md object-contain relative overflow-visible'>
+                          <Avatar className='aspect-square w-[120px] h-[100px] rounded-md object-contain relative overflow-visible border'>
                             <AvatarImage src={previewAvatarFromFile ?? undefined} className='rounded-md' />
                             <AvatarFallback className='rounded-md'>{name || 'Thumbnail'}</AvatarFallback>
                             {file && (
@@ -117,6 +117,7 @@ export default function AddCategory() {
                                 className='h-5 min-w-5 rounded-full px-1 font-mono tabular-nums absolute bg-white text-black -top-2 -right-2 z-50 border border-gray-300 cursor-pointer'
                                 onClick={() => {
                                   setFile(null)
+                                  field.onChange(null)
                                 }}
                               >
                                 x
@@ -159,7 +160,7 @@ export default function AddCategory() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='name'>Tên danh mục</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <Input id='name' className='w-full' {...field} />
+                        <Input id='name' className='w-full' {...field} placeholder='Tên danh mục...' />
                         <FormMessage />
                       </div>
                     </div>
@@ -214,7 +215,7 @@ export default function AddCategory() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='description'>Mô tả thẻ</Label>
                       <div className='col-span-3 w-full space-y-2 '>
-                        <TinyEditor value={field.value} onChange={field.onChange} />
+                        <TinyEditor value={field.value} onChange={field.onChange} h={200} />
                         <FormMessage />
                       </div>
                     </div>

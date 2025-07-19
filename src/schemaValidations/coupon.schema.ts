@@ -6,11 +6,33 @@ export const CouponSchema = z.object({
   code: z.string().min(1, 'Mã giảm giá là bắt buộc').max(500),
   description: z.string(),
   discountType: z.nativeEnum(CouponDiscountType),
-  discountValue: z.coerce.number().positive(),
-  minOrderAmount: z.coerce.number().nonnegative(),
-  usageLimit: z.coerce.number().int().nonnegative(),
+  discountValue: z.coerce
+    .number({
+      message: 'Giá trị giảm giá phải là một số hợp lệ'
+    })
+    .positive({
+      message: 'Giá trị giảm giá phải lớn hơn 0'
+    }),
+  minOrderAmount: z.coerce
+    .number({
+      message: 'Giá trị giảm giá phải là một số hợp lệ'
+    })
+    .nonnegative({
+      message: 'Giá trị giảm giá tối thiểu phải là 0'
+    }),
+  usageLimit: z.coerce
+    .number({
+      message: 'Giá trị giảm giá phải là một số hợp lệ'
+    })
+    .int({
+      message: 'Số lượng sử dụng tối đa phải là một số nguyên'
+    })
+    .nonnegative({
+      message: 'Số lượng sử dụng tối đa phải là 0'
+    }),
   isActive: z.coerce.boolean(),
   expiresAt: z.coerce.date().nullable(),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })

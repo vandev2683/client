@@ -1,9 +1,14 @@
 import QuantityController from '@/components/QuantityController'
-import { formatCurrency, formatDateTimeToLocaleString, getIdByNameId, handleError } from '@/lib/utils'
-import { useProductDetailQuery } from '@/queries/useManageProduct'
+import {
+  formatCurrency,
+  formatDateTimeToLocaleString,
+  getHtmlPlainTextTitle,
+  getIdByNameId,
+  handleError
+} from '@/lib/utils'
 import type { ProductType, VariantType } from '@/schemaValidations/product.schema'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -14,14 +19,53 @@ import { ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAddToCartMutation } from '@/queries/useCart'
 import { toast } from 'sonner'
-import { useReviewsByProductQuery } from '@/queries/useReview'
+import { productSocket, reviewSocket } from '@/lib/sockets'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { TypeProduct } from '@/constants/product'
+import classNames from 'classnames'
+import type { MessageResType } from '@/schemaValidations/response.schema'
+import { useProductDetailQuery } from '@/queries/useProduct'
+import { useAppContext } from '@/components/AppProvider'
 
 export default function ProductDetail() {
+  const { isAuth } = useAppContext()
+
+  const navigate = useNavigate()
   const params = useParams()
   const productId = getIdByNameId(params.productName as string)
 
-  const productDetailQuery = useProductDetailQuery(Number(productId))
-  const product = productDetailQuery.data?.data
+  const { data, refetch } = useProductDetailQuery(Number(productId))
+  const product = data?.data
+
+  useEffect(() => {
+    if (isAuth) {
+      productSocket.connect()
+      reviewSocket.connect()
+    } else {
+      productSocket.disconnect()
+      reviewSocket.disconnect()
+      return
+    }
+
+    productSocket.on('updated-product', (data: MessageResType) => {
+      setTimeout(() => {
+        refetch()
+      }, 10)
+    })
+
+    reviewSocket.on('recieved-review', (data: MessageResType) => {
+      setTimeout(() => {
+        refetch()
+      }, 10)
+    })
+
+    return () => {
+      productSocket.off('updated-product')
+      reviewSocket.off('recieved-review')
+      productSocket.disconnect()
+      reviewSocket.disconnect()
+    }
+  }, [isAuth, refetch])
 
   const [buyCount, setBuyCount] = useState(0)
   const [currentIndexImages, setCurrentIndexImages] = useState([0, 5])
@@ -186,13 +230,26 @@ export default function ProductDetail() {
     }
   }
 
-  const handleBuyNow = () => {
-    if (!validateVariantSelection()) return
-    // Implement buy now functionality
+  const handleBuyNow = async () => {
+    if (!validateVariantSelection() || addToCartMutation.isPending) return
+    try {
+      if (selectedVariant) {
+        const result = await addToCartMutation.mutateAsync({
+          variantId: selectedVariant.id,
+          quantity: buyCount
+        })
+        navigate(`/cart`, {
+          state: { cartItemId: result.data.id }
+        })
+      }
+      return
+    } catch (error) {
+      setIsOpenError(true)
+      handleError(error)
+    }
   }
 
-  const reviewsQuery = useReviewsByProductQuery(Number(productId))
-  const reviews = reviewsQuery.data?.data.data || []
+  const reviews = product?.reviews || []
   const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length || 0
   const renderStars = ({ rating, sizeIcon = 5 }: { rating: number; sizeIcon?: number }) => {
     return Array.from({ length: 5 }, (_, index) => {
@@ -224,8 +281,17 @@ export default function ProductDetail() {
   return (
     <div className='bg-gray-100 py-6'>
       <div className='max-w-6xl mx-auto px-4'>
-        <div className='bg-background p-4 shadow rounded-lg'>
-          <div className='grid grid-cols-12 gap-9'>
+        <div className='bg-background p-4 shadow rounded-lg relative'>
+          {/* <Link
+            to='/'
+            className='flex items-center gap-2 text-gray-600 hover:text-primary transition-colors z-10 absolute top-0 left-0'
+            title='Quay lại trang sản phẩm'
+          >
+            <ArrowLeft className='w-4 h-4' />
+            <span className='text-sm font-medium'>Back</span>
+          </Link> */}
+
+          <div className='grid grid-cols-12 gap-9 mt-1'>
             <div className='col-span-5'>
               <div className='relative w-full cursor-zoom-in overflow-hidden pt-[100%] shadow'>
                 <img
@@ -310,20 +376,35 @@ export default function ProductDetail() {
                     </div>
                   )}
                 </div>
-                <h1 className='text-xl font-semibold'>{product.name}</h1>
+                <h1 className='text-xl font-semibold'>
+                  {product.name} {product.type === TypeProduct.FixedCombo ? '(cố định món ăn)' : ''}
+                </h1>
               </div>
-
+              {product.type === TypeProduct.FixedCombo && (
+                <div className='px-6 ml-10'>
+                  <div
+                    dangerouslySetInnerHTML={{ __html: product.shortDescription }}
+                    className='overflow-hidden text-ellipsis whitespace-nowrap [&>*]:inline [&>*]:whitespace-nowrap [&>*]:overflow-hidden [&>*]:text-ellipsis text-sm text-gray-500 truncate'
+                    title={getHtmlPlainTextTitle(product.shortDescription)}
+                  />
+                </div>
+              )}
               <div className='mt-5 flex items-center'>
                 <div className='capitalize text-gray-500'>Giá</div>
                 <div className='ml-3 text-2xl font-medium text-red-600'>
                   {formatCurrency(selectedVariant ? selectedVariant.price : product.basePrice)}
                 </div>
               </div>
+
               {product?.variantsConfig && product.variantsConfig.length > 0 && (
-                <div className='mt-8'>
+                <div
+                  className={classNames('mt-8', {
+                    hidden: product.variantsConfig[0].type === 'default' && product.variantsConfig.length === 1
+                  })}
+                >
                   {product.variantsConfig.map((variantConfig) => (
                     <div key={variantConfig.type} className='mb-4'>
-                      <div className='capitalize text-gray-500 mb-2'>{variantConfig.type}</div>
+                      <div className='text-gray-500 mb-2'>{variantConfig.type}</div>
                       <div className='flex flex-wrap gap-3'>
                         {variantConfig.options.map((option) => (
                           <div
@@ -363,9 +444,10 @@ export default function ProductDetail() {
                   <div className='mt-1 text-red-600 min-h-[1.25rem] text-sm'>{errorVariation}</div>
                 </div>
               )}
-              <div className='mt-2 flex items-center'>
+
+              <div className='mt-8 flex items-center'>
                 <div className='capitalize text-gray-500'>Số lượng</div>
-                <div className={!selectedVariant || selectedVariant.stock <= 0 ? 'opacity-50 cursor-none' : ''}>
+                <div className={!selectedVariant || selectedVariant.stock <= 0 ? 'opacity-50' : ''}>
                   <QuantityController
                     onDecrease={handleBuyCount}
                     onIncrease={handleBuyCount}
@@ -432,30 +514,36 @@ export default function ProductDetail() {
               <Card className='rounded-none rounded-bl-lg rounded-br-lg'>
                 <CardHeader>
                   <CardTitle className='text-lg font-medium text-gray-700'>Đánh Giá Khách Hàng</CardTitle>
-                  <div className='flex items-center gap-2 mb-4'>
-                    <div className='flex'>{renderStars({ rating: totalRating })}</div>
-                    <span className='text-sm text-gray-600'>
-                      ({totalRating}/5 - {reviews.length} đánh giá)
-                    </span>
-                  </div>
+                  {reviews.length > 0 ? (
+                    <div className='flex items-center gap-2 mb-4'>
+                      <div className='flex'>{renderStars({ rating: totalRating })}</div>
+                      <span className='text-sm text-gray-600'>
+                        ({totalRating.toFixed(1)}/5 - {reviews.length} đánh giá)
+                      </span>
+                    </div>
+                  ) : (
+                    <div className='text-sm text-gray-500'>Chưa có đánh giá nào</div>
+                  )}
                 </CardHeader>
                 <CardContent className='space-y-4'>
-                  <div className='space-y-3'>
-                    {reviews &&
-                      reviews.length > 0 &&
-                      reviews.map((review) => (
-                        <div key={review.id} className='pb-3'>
-                          <div className='flex items-center gap-2 mb-1'>
-                            <p className='font-medium text-sm'>{review.user.name}</p>
-                            <div className='flex'>{renderStars({ rating: review.rating, sizeIcon: 3 })}</div>
-                            <span className='text-xs text-gray-400'>
-                              {formatDateTimeToLocaleString(review.updatedAt)}
-                            </span>
+                  <ScrollArea className='h-60'>
+                    <div className='space-y-3'>
+                      {reviews &&
+                        reviews.length > 0 &&
+                        reviews.map((review) => (
+                          <div key={review.id} className='pb-3'>
+                            <div className='flex items-center gap-2 mb-1'>
+                              <p className='font-medium text-sm'>{review.user.name}</p>
+                              <div className='flex'>{renderStars({ rating: review.rating, sizeIcon: 3 })}</div>
+                              <span className='text-xs text-gray-400'>
+                                {formatDateTimeToLocaleString(review.updatedAt)}
+                              </span>
+                            </div>
+                            <p className='text-sm text-gray-600'>{review.content ? review.content : '...'}</p>
                           </div>
-                          <p className='text-sm text-gray-600'>{review.content}</p>
-                        </div>
-                      ))}
-                  </div>
+                        ))}
+                    </div>
+                  </ScrollArea>
                 </CardContent>
               </Card>
             </TabsContent>

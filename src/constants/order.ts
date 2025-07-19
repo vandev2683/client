@@ -6,6 +6,7 @@ export const OrderFee = {
 export const OrderType = {
   Delivery: 'Delivery',
   DineIn: 'DineIn'
+  // Takeaway: 'Takeaway'
 } as const
 
 export const OrderStatus = {

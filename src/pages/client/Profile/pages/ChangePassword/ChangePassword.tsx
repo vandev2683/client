@@ -1,15 +1,15 @@
-import { ChangePasswordBodySchema, type ChangePasswordBodyType } from '@/schemaValidations/profile.schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Button } from '@/components/ui/button'
-import { useChangePasswordMutation } from '@/queries/useProfile'
 import { toast } from 'sonner'
 import { handleError } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Eye, EyeClosed } from 'lucide-react'
 import { useState } from 'react'
+import { ChangeProfilePasswordBodySchema, type ChangeProfilePasswordBodyType } from '@/schemaValidations/profile.schema'
+import { useChangeProfilePasswordMutation } from '@/queries/useProfile'
 
 export default function ChangePassword() {
   const [showPasswords, setShowPasswords] = useState({
@@ -24,8 +24,8 @@ export default function ChangePassword() {
       [field]: !prev[field]
     }))
   }
-  const form = useForm<ChangePasswordBodyType>({
-    resolver: zodResolver(ChangePasswordBodySchema),
+  const form = useForm<ChangeProfilePasswordBodyType>({
+    resolver: zodResolver(ChangeProfilePasswordBodySchema),
     defaultValues: {
       password: '',
       newPassword: '',
@@ -33,11 +33,11 @@ export default function ChangePassword() {
     }
   })
 
-  const changePasswordMutation = useChangePasswordMutation()
-  const onSubmit = async (data: ChangePasswordBodyType) => {
-    if (changePasswordMutation.isPending) return
+  const changeProfilePasswordMutation = useChangeProfilePasswordMutation()
+  const onSubmit = async (data: ChangeProfilePasswordBodyType) => {
+    if (changeProfilePasswordMutation.isPending) return
     try {
-      await changePasswordMutation.mutateAsync(data)
+      await changeProfilePasswordMutation.mutateAsync(data)
       toast.success('Đổi mật khẩu thành công')
       form.reset()
     } catch (error) {

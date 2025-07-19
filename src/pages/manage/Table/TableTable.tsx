@@ -38,12 +38,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AutoPagination from '@/components/AutoPagination'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { cn, handleError } from '@/lib/utils'
+import { formatTableStatus, getHtmlPlainTextTitle, handleError } from '@/lib/utils'
 import EditTable from './EditTable'
 import AddTable from './AddTable'
 import type { TableType } from '@/schemaValidations/table.schema'
 import { useAllTablesQuery, useChangeTableStatusMutation, useDeleteTableMutation } from '@/queries/useTable'
-import { TableStatusValues, type TableStatusType } from '@/constants/table'
+import { TableStatus, TableStatusValues, type TableStatusType } from '@/constants/table'
+import classNames from 'classnames'
+import { tableSocket } from '@/lib/sockets'
+import type { MessageResType } from '@/schemaValidations/response.schema'
+import { useAppContext } from '@/components/AppProvider'
 
 const TableContext = createContext<{
   tableIdEdit: number | undefined
@@ -91,23 +95,7 @@ export const columns: ColumnDef<TableType>[] = [
         }
       }
 
-      const status = row.getValue('status') as TableStatusType
-      let classNameStatus =
-        'capitalize bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300'
-      if (status === 'Disabled') {
-        classNameStatus =
-          'bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300'
-      } else if (status === 'Reserved') {
-        classNameStatus =
-          'bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-yellow-900 dark:text-yellow-300'
-      } else if (status === 'Occupied') {
-        classNameStatus =
-          'bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300'
-      } else if (status === 'Cleaning') {
-        classNameStatus =
-          'bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300'
-      }
-
+      const status = row.original.status
       return (
         <>
           <Select onValueChange={handleChangeStatus} defaultValue={status}>
@@ -115,13 +103,24 @@ export const columns: ColumnDef<TableType>[] = [
               className='w-0 p-0 h-0 border-none shadow-none hover:shadow-none focus:shadow-none'
               hasIcon={false}
             >
-              <span className={cn([classNameStatus, 'cursor-pointer'])}>{row.getValue('status')}</span>
+              <span
+                className={classNames('text-xs font-medium me-2 px-2.5 py-0.5 rounded-full capitalize cursor-pointer', {
+                  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300': status === TableStatus.Available,
+                  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300': status === TableStatus.Disabled,
+                  'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300':
+                    status === TableStatus.Reserved,
+                  'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300': status === TableStatus.Occupied,
+                  'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300': status === TableStatus.Cleaning
+                })}
+              >
+                {formatTableStatus(status)}
+              </span>
             </SelectTrigger>
 
             <SelectContent>
-              {TableStatusValues.map((table) => (
-                <SelectItem key={table} value={table}>
-                  {table}
+              {TableStatusValues.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {formatTableStatus(value)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -134,10 +133,17 @@ export const columns: ColumnDef<TableType>[] = [
     accessorKey: 'location',
     header: 'Location',
     cell: ({ row }) => {
-      const description = row.getValue('location') as string
-      const match = description.match(/<p[^>]*>.*?<\/p>/i)
-      const briefDesc = match ? match[0] : description
-      return <div dangerouslySetInnerHTML={{ __html: briefDesc }} className='whitespace-pre-line' />
+      const location = row.getValue('location') as string
+      const plainTextTitle = getHtmlPlainTextTitle(location)
+      return (
+        <div className='max-w-[300px]'>
+          <div
+            dangerouslySetInnerHTML={{ __html: location }}
+            className='overflow-hidden text-ellipsis whitespace-nowrap [&>*]:inline [&>*]:whitespace-nowrap [&>*]:overflow-hidden [&>*]:text-ellipsis'
+            title={plainTextTitle}
+          />
+        </div>
+      )
     }
   },
   {
@@ -228,16 +234,44 @@ function AlertDialogTagDelete({
 
 const PAGE_SIZE = 10
 export default function TableTable() {
+  const { isAuth } = useAppContext()
   const navigate = useNavigate()
 
   const query = useQuery()
   const page = query.get('page') ? Number(query.get('page')) : 1
+  const statusFilter = query.get('status') || ''
 
   const [tableIdEdit, setTableIdEdit] = useState<number | undefined>()
   const [tableDelete, setTableDelete] = useState<TableType | null>(null)
 
-  const tablesQuery = useAllTablesQuery()
-  const data = tablesQuery.data?.data.data || []
+  const { data: tables, refetch } = useAllTablesQuery()
+  const data = tables?.data.data || []
+
+  useEffect(() => {
+    if (isAuth) {
+      tableSocket.connect()
+    } else {
+      tableSocket.disconnect()
+      return
+    }
+
+    tableSocket.on('sended-table', (data: MessageResType) => {
+      setTimeout(() => {
+        refetch()
+      }, 10)
+    })
+
+    return () => {
+      tableSocket.off('sended-table')
+      tableSocket.disconnect()
+    }
+  }, [isAuth, refetch])
+
+  // Filter data based on query parameters
+  const filteredData = data.filter((table) => {
+    const matchesStatus = !statusFilter || table.status === statusFilter
+    return matchesStatus
+  })
 
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -250,7 +284,7 @@ export default function TableTable() {
   })
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -283,7 +317,7 @@ export default function TableTable() {
       <div className='w-full'>
         <EditTable id={tableIdEdit} setId={setTableIdEdit} />
         <AlertDialogTagDelete tableDelete={tableDelete} setTableDelete={setTableDelete} />
-        <div className='flex items-center py-4'>
+        <div className='flex items-center py-4 gap-4'>
           <Input
             placeholder='Lọc mã bàn ăn...'
             value={(table.getColumn('code')?.getFilterValue() as string) ?? ''}
@@ -294,6 +328,33 @@ export default function TableTable() {
             }}
             className='max-w-sm'
           />
+
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              const params = new URLSearchParams(window.location.search)
+              if (value && value !== 'all') {
+                params.set('status', value)
+              } else {
+                params.delete('status')
+              }
+              params.delete('page') // Reset to first page
+              navigate(`/manage/tables?${params.toString()}`)
+            }}
+          >
+            <SelectTrigger className='max-w-sm'>
+              <span>{statusFilter ? formatTableStatus(statusFilter as TableStatusType) : 'Tất cả trạng thái'}</span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>Tất cả trạng thái</SelectItem>
+              {TableStatusValues.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {formatTableStatus(status)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <div className='ml-auto flex items-center gap-2'>
             <AddTable />
           </div>
@@ -334,8 +395,8 @@ export default function TableTable() {
         </div>
         <div className='flex items-center justify-end space-x-2 py-4'>
           <div className='text-xs text-muted-foreground py-4 flex-1 '>
-            Hiển thị <strong>{table.getPaginationRowModel().rows.length}</strong> trong <strong>{data.length}</strong>{' '}
-            kết quả
+            Hiển thị <strong>{table.getPaginationRowModel().rows.length}</strong> trong{' '}
+            <strong>{filteredData.length}</strong> kết quả
           </div>
           <div>
             <AutoPagination

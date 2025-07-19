@@ -12,6 +12,7 @@ import Table from './pages/manage/Table'
 import Coupon from './pages/manage/Coupon'
 import Role from './pages/manage/Role'
 import User from './pages/manage/User'
+import Order from './pages/manage/Order'
 import Login from './pages/client/Login'
 import OAuth from './pages/client/OAuth'
 import Register from './pages/client/Register'
@@ -26,24 +27,26 @@ import ProfileLayout from './pages/client/Profile'
 import Information from './pages/client/Profile/pages/Information'
 import ChangePassword from './pages/client/Profile/pages/ChangePassword'
 import OrderHistory from './pages/client/Profile/pages/OrderHistory'
-import Order from './pages/manage/Order'
 
 const Dashboard = () => <div>Dashboard Page - Sẽ được triển khai sau</div>
 const Bookings = () => <div>Bookings Page - Sẽ được triển khai sau</div>
 
+const MANAGE_ROLE = [RoleName.Admin, RoleName.Manager, RoleName.Employee] as string[]
 function ProtectedRoute() {
-  const { isAuth } = useAppContext()
+  const { isAuth, profile } = useAppContext()
   const location = useLocation()
   if (location.pathname.startsWith('/manage')) {
-    return isAuth ? <Outlet /> : <Navigate to='/manage/login' />
+    if (profile && MANAGE_ROLE.includes(profile.role.name)) {
+      return isAuth ? <Outlet /> : <Navigate to='/manage/login' />
+    } else {
+      return isAuth ? <Navigate to='/' /> : <Navigate to='/login' />
+    }
   } else {
     return isAuth ? <Outlet /> : <Navigate to='/login' />
   }
 }
-
 function RejectedRoute() {
   const { isAuth, profile } = useAppContext()
-  const MANAGE_ROLE = [RoleName.Admin, RoleName.Manager, RoleName.Employee] as string[]
   if (isAuth && profile) {
     const lastPath = sessionStorage.getItem('last-path')
     const fallbackPath = MANAGE_ROLE.includes(profile.role.name) ? '/manage/dashboard' : '/'
@@ -71,10 +74,6 @@ export default function useRouteElements() {
         {
           path: ':productName',
           element: <ProductDetail />
-        },
-        {
-          path: 'cart',
-          element: <Cart />
         }
       ]
     },
@@ -126,6 +125,10 @@ export default function useRouteElements() {
           path: '',
           element: <ClientLayout />,
           children: [
+            {
+              path: 'cart',
+              element: <Cart />
+            },
             {
               path: 'checkout',
               element: <Checkout />

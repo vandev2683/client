@@ -12,10 +12,11 @@ export const useCartItemsQuery = (query: PaginationQueryType) => {
   })
 }
 
-export const useAllCartItemsQuery = () => {
+export const useAllCartItemsQuery = ({ enabled }: { enabled: boolean }) => {
   return useQuery({
     queryKey: [BASE_KEY],
     queryFn: cartApis.findAll,
+    enabled,
     placeholderData: keepPreviousData
   })
 }
@@ -30,7 +31,7 @@ export const useAddToCartMutation = () => {
   })
 }
 
-export const useUpdateCartMutation = () => {
+export const useUpdateCartItemMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: cartApis.updateCartItem,
@@ -40,7 +41,7 @@ export const useUpdateCartMutation = () => {
   })
 }
 
-export const useDeleteCartMutation = () => {
+export const useDeleteCartItemsMutation = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: cartApis.deleteCartItems,

@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { cn, handleError } from '@/lib/utils'
+import { cn, formatRoleName, formatUserStatus, handleError } from '@/lib/utils'
 import { toast } from 'sonner'
 import { UpdateUserBodySchema, type UpdateUserBodyType } from '@/schemaValidations/user.schema'
 import { useUpdateUserMutation, useUserDetailQuery } from '@/queries/useUser'
@@ -146,7 +146,7 @@ export default function EditUser({
                         <div className='flex gap-2 items-start justify-start'>
                           <Avatar className='aspect-square w-[120px] h-[100px] overflow-visible rounded-md object-contain relative'>
                             <AvatarImage src={previewAvatarFromFile ?? undefined} />
-                            <AvatarFallback className='rounded-none'>{name || 'Avatar'}</AvatarFallback>
+                            <AvatarFallback className='rounded-none'>{'Avatar'}</AvatarFallback>
                             {(file || image) && (
                               <Badge
                                 className='h-5 min-w-5 rounded-full px-1 font-mono tabular-nums absolute bg-white text-black -top-2 -right-2 z-50 border border-gray-300'
@@ -198,7 +198,7 @@ export default function EditUser({
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='name'>Họ và tên</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <Input id='name' className='w-full' {...field} />
+                        <Input id='name' className='w-full' {...field} placeholder='Tên người dùng...' />
                         <FormMessage />
                       </div>
                     </div>
@@ -221,6 +221,7 @@ export default function EditUser({
                             const value = e.target.value.replace(/\D/g, '')
                             field.onChange(value)
                           }}
+                          placeholder='Số điện thoại...'
                         />
                         <FormMessage />
                       </div>
@@ -297,7 +298,7 @@ export default function EditUser({
                           <SelectContent>
                             {UserStatusValues.map((val) => (
                               <SelectItem key={val} value={val}>
-                                {val}
+                                {formatUserStatus(val)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -331,7 +332,7 @@ export default function EditUser({
                           <SelectContent>
                             {roles.map((role) => (
                               <SelectItem key={role.id} value={role.id.toString()}>
-                                {role.name}
+                                {formatRoleName(role.name)}
                               </SelectItem>
                             ))}
                           </SelectContent>

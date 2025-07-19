@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { cn, handleError } from '@/lib/utils'
+import { cn, formatRoleName, formatUserStatus, handleError } from '@/lib/utils'
 import { CreateUserBodySchema, type CreateUserBodyType } from '@/schemaValidations/user.schema'
 import { useUploadImagesMutation } from '@/queries/useMedia'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -41,7 +41,7 @@ export default function AddUser() {
       avatar: null,
       dateOfBirth: null,
       status: 'Active',
-      roleId: roles.length > 0 ? roles[2].id : undefined
+      roleId: roles.length > 0 ? roles[0].id : undefined
     }
   })
   const image = form.watch('avatar')
@@ -115,12 +115,13 @@ export default function AddUser() {
                         <div className='flex gap-2 items-start justify-start'>
                           <Avatar className='aspect-square w-[120px] h-[100px] rounded-md object-contain relative overflow-visible'>
                             <AvatarImage src={previewAvatarFromFile ?? undefined} className='rounded-md' />
-                            <AvatarFallback className='rounded-md'>{name || 'Avatar'}</AvatarFallback>
+                            <AvatarFallback className='rounded-md'>{'Avatar'}</AvatarFallback>
                             {file && (
                               <Badge
                                 className='h-5 min-w-5 rounded-full px-1 font-mono tabular-nums absolute bg-white text-black -top-2 -right-2 z-50 border border-gray-300 cursor-pointer'
                                 onClick={() => {
                                   setFile(null)
+                                  field.onChange(null)
                                 }}
                               >
                                 x
@@ -163,7 +164,7 @@ export default function AddUser() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='name'>Họ và tên</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <Input id='name' className='w-full' {...field} />
+                        <Input id='name' className='w-full' {...field} placeholder='Tên người dùng...' />
                         <FormMessage />
                       </div>
                     </div>
@@ -178,7 +179,7 @@ export default function AddUser() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='email'>Email</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <Input id='email' className='w-full' {...field} />
+                        <Input id='email' className='w-full' {...field} placeholder='Email...' />
                         <FormMessage />
                       </div>
                     </div>
@@ -193,7 +194,7 @@ export default function AddUser() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='password'>Mật khẩu</Label>
                       <div className='col-span-3 w-full space-y-2 relative'>
-                        <Input id='password' className='w-full' {...field} type={inputType} />
+                        <Input id='password' className='w-full' {...field} type={inputType} placeholder='••••••' />
                         {inputType === 'password' ? (
                           <EyeClosed
                             className='absolute right-2 top-2/5 -translate-y-1/2 h-4 w-4 cursor-pointer'
@@ -231,6 +232,7 @@ export default function AddUser() {
                             const value = e.target.value.replace(/\D/g, '')
                             field.onChange(value)
                           }}
+                          placeholder='Số điện thoại...'
                         />
                         <FormMessage />
                       </div>
@@ -303,7 +305,7 @@ export default function AddUser() {
                           <SelectContent>
                             {UserStatusValues.map((val) => (
                               <SelectItem key={val} value={val}>
-                                {val}
+                                {formatUserStatus(val)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -336,7 +338,7 @@ export default function AddUser() {
                           <SelectContent>
                             {roles.map((role) => (
                               <SelectItem key={role.id} value={role.id.toString()}>
-                                {role.name}
+                                {formatRoleName(role.name)}
                               </SelectItem>
                             ))}
                           </SelectContent>

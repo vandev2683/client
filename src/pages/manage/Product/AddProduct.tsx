@@ -1,17 +1,25 @@
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Package, PlusCircle } from 'lucide-react'
+import { PlusCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { handleError } from '@/lib/utils'
+import { formatProductStatus, formatTypeProduct, handleError } from '@/lib/utils'
 import { useUploadImagesMutation } from '@/queries/useMedia'
-import { useCreateProductMutation } from '@/queries/useManageProduct'
+import { useCreateProductMutation } from '@/queries/useProduct'
 import ImageUpload from '@/components/ImageUpload'
 import { CreateProductBodySchema, type CreateProductBodyType } from '@/schemaValidations/product.schema'
 import { useAllCategoriesQuery } from '@/queries/useCategory'
@@ -21,7 +29,7 @@ import TinyEditor from '@/components/TinyEditor'
 import { Separator } from '@/components/ui/separator'
 import VariantsConfig from '@/components/VariantsConfig'
 import VariantsList from '@/components/VariantsList'
-import { ProductStatusValues } from '@/constants/product'
+import { ProductStatusValues, TypeProduct, TypeProductValues } from '@/constants/product'
 
 export default function AddProduct() {
   const [open, setOpen] = useState(false)
@@ -31,6 +39,8 @@ export default function AddProduct() {
     resolver: zodResolver(CreateProductBodySchema),
     defaultValues: {
       name: '',
+      type: TypeProduct.Single,
+      shortDescription: '',
       description: '',
       images: [],
       status: 'Pending',
@@ -46,6 +56,7 @@ export default function AddProduct() {
     }
   })
 
+  const type = form.watch('type')
   const variantsConfig = form.watch('variantsConfig')
 
   const reset = () => {
@@ -101,7 +112,7 @@ export default function AddProduct() {
 
       await createProductMutation.mutateAsync(body)
       reset()
-      toast.success('Thêm sản phẩm thành công')
+      toast.success(`Thêm ${type === TypeProduct.Single ? 'sản phẩm' : 'combo'} thành công`)
     } catch (error) {
       console.error(error)
       handleError(error, form.setError)
@@ -118,18 +129,50 @@ export default function AddProduct() {
       </DialogTrigger>
       <DialogContent className='sm:max-w-[750px] max-h-screen overflow-auto' aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>Thêm sản phẩm</DialogTitle>
+          <DialogTitle>Thêm {type === TypeProduct.Single ? 'sản phẩm' : 'combo'}</DialogTitle>
+          <DialogDescription>
+            Lưu ý: Giá của {type === TypeProduct.Single ? 'sản phẩm' : 'combo'} sẽ được tính theo giá của biến thể có
+            giá nhỏ nhất trong {type === TypeProduct.Single ? 'sản phẩm' : 'combo'} này.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
             noValidate
             className='grid auto-rows-max items-start gap-4 md:gap-8 z-50'
-            id='add-product-form'
+            id='add-form'
             onSubmit={form.handleSubmit(onSubmit, (error) => {
               console.log(error)
             })}
           >
             <div className='grid gap-4 py-4'>
+              <FormField
+                control={form.control}
+                name='type'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='type'>Loại sản phẩm</Label>
+                      <div className='col-span-3 w-full space-y-2'>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl id='type'>
+                            <SelectTrigger className='w-[50%]'>
+                              <SelectValue placeholder='Chọn loại sản phẩm' />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {TypeProductValues.map((val) => (
+                              <SelectItem key={val} value={val}>
+                                {formatTypeProduct(val)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name='images'
@@ -138,7 +181,7 @@ export default function AddProduct() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='name'>Ảnh minh họa</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <ImageUpload files={files} setFiles={setFiles} />
+                        <ImageUpload files={files} setFiles={setFiles} isMultiUpload={type === TypeProduct.Single} />
                         <FormMessage />
                       </div>
                     </div>
@@ -151,15 +194,16 @@ export default function AddProduct() {
                 render={({ field }) => (
                   <FormItem>
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
-                      <Label htmlFor='name'>Tên sản phẩm</Label>
+                      <Label htmlFor='name'>Tên {type === TypeProduct.Single ? 'sản phẩm' : 'combo'}</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <Input id='name' className='w-full' {...field} />
+                        <Input id='name' className='w-full' placeholder='Tên...' {...field} />
                         <FormMessage />
                       </div>
                     </div>
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name='status'
@@ -177,7 +221,7 @@ export default function AddProduct() {
                           <SelectContent>
                             {ProductStatusValues.map((val) => (
                               <SelectItem key={val} value={val}>
-                                {val}
+                                {formatProductStatus(val)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -188,6 +232,37 @@ export default function AddProduct() {
                   </FormItem>
                 )}
               />
+              {type !== TypeProduct.Single && (
+                <FormField
+                  control={form.control}
+                  name='shortDescription'
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                        <Label htmlFor='shortDescription'>Thông tin thành phần</Label>
+                        <div className='col-span-3 w-full space-y-2'>
+                          <TinyEditor
+                            value={field.value}
+                            onChange={field.onChange}
+                            h={200}
+                            lineHeight={1.2}
+                            toolbar='undo redo | bullist numlist'
+                          />
+                          {/* <Inputx
+                            id='shortDescription'
+                            className='w-full'
+                            placeholder='Thông tin thành phần...'
+                            {...field}
+                          /> */}
+                          <FormMessage />
+                        </div>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              <Separator />
               <FormField
                 control={form.control}
                 name='categories'
@@ -255,9 +330,9 @@ export default function AddProduct() {
                 render={({ field }) => (
                   <FormItem>
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
-                      <Label htmlFor='description'>Mô tả sản phẩm</Label>
-                      <div className='col-span-3 w-full space-y-2 '>
-                        <TinyEditor value={field.value} onChange={field.onChange} />
+                      <Label htmlFor='description'>Mô tả {type === TypeProduct.Single ? 'sản phẩm' : 'combo'}</Label>
+                      <div className='col-span-3 w-full space-y-2'>
+                        <TinyEditor value={field.value} onChange={field.onChange} h={300} />
                         <FormMessage />
                       </div>
                     </div>
@@ -266,23 +341,25 @@ export default function AddProduct() {
               />
 
               <Separator />
-              <FormField
-                control={form.control}
-                name='variantsConfig'
-                render={({ field }) => (
-                  <FormItem>
-                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
-                      <Label htmlFor='variantsConfig'>Tạo biến thể</Label>
-                      <div className='col-span-3 w-full space-y-2 '>
-                        <VariantsConfig variantsConfig={field.value} setVariantsConfig={field.onChange} />
-                        <div>
-                          <FormMessage />
+              {type !== TypeProduct.FixedCombo && (
+                <FormField
+                  control={form.control}
+                  name='variantsConfig'
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                        <Label htmlFor='variantsConfig'>Tạo biến thể</Label>
+                        <div className='col-span-3 w-full space-y-2 '>
+                          <VariantsConfig variantsConfig={field.value} setVariantsConfig={field.onChange} />
+                          <div>
+                            <FormMessage />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </FormItem>
-                )}
-              />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <Separator />
               <FormField
@@ -310,7 +387,7 @@ export default function AddProduct() {
           </form>
         </Form>
         <DialogFooter className='flex items-center gap-4'>
-          <Button type='submit' form='add-product-form'>
+          <Button type='submit' form='add-form'>
             Thêm
           </Button>
         </DialogFooter>

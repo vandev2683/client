@@ -8,15 +8,25 @@ export const useProductReviewsQuery = (productId: number | undefined) => {
     queryKey: [BASE_KEY, productId],
     queryFn: () => reviewApis.list({ productId: productId as number }),
     enabled: productId !== undefined && productId > 0,
-    placeholderData: keepPreviousData
+    placeholderData: keepPreviousData,
+    staleTime: 0
   })
 }
 
-export const useReviewDetailQuery = (productId: number | undefined, orderId: number | undefined) => {
+export const useReviewDetailByProductAndOrderQuery = (productId: number | null, orderId: number | undefined) => {
   return useQuery({
     queryKey: [BASE_KEY, productId, orderId],
-    queryFn: () => reviewApis.findDetail({ productId: productId as number, orderId: orderId as number }),
-    enabled: productId !== undefined && productId > 0 && orderId !== undefined && orderId > 0
+    queryFn: () =>
+      reviewApis.findDetailByProductAndOrder({ productId: productId as number, orderId: orderId as number }),
+    enabled: productId !== null && productId > 0 && orderId !== undefined && orderId > 0
+  })
+}
+
+export const useReviewDetailByIdQuery = (reviewId: number | undefined) => {
+  return useQuery({
+    queryKey: [BASE_KEY, reviewId],
+    queryFn: () => reviewApis.findDetailById(reviewId as number),
+    enabled: reviewId !== undefined && reviewId > 0
   })
 }
 

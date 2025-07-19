@@ -8,7 +8,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { toast } from 'sonner'
-import { handleError } from '@/lib/utils'
+import { formatRoleStatus, handleError } from '@/lib/utils'
 import TinyEditor from '@/components/TinyEditor'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { CreateRoleBodySchema, type CreateRoleBodyType } from '@/schemaValidations/role.schema'
@@ -73,7 +73,7 @@ export default function AddRole() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='name'>Tên vai trò</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <Input id='name' className='w-full' {...field} />
+                        <Input id='name' className='w-full' {...field} placeholder='Tên vài trò...' />
                         <FormMessage />
                       </div>
                     </div>
@@ -97,11 +97,11 @@ export default function AddRole() {
                         >
                           <div className='flex items-center space-x-2'>
                             <RadioGroupItem value='active' id='active' />
-                            <Label htmlFor='active'>Kích hoạt ngay</Label>
+                            <Label htmlFor='active'>{formatRoleStatus(true)}</Label>
                           </div>
                           <div className='flex items-center space-x-2'>
                             <RadioGroupItem value='inactive' id='inactive' />
-                            <Label htmlFor='inactive'>Chưa kích hoạt</Label>
+                            <Label htmlFor='inactive'>{formatRoleStatus(false)}</Label>
                           </div>
                         </RadioGroup>
                         <FormMessage />
@@ -118,7 +118,7 @@ export default function AddRole() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='description'>Mô tả vai trò</Label>
                       <div className='col-span-3 w-full space-y-2 '>
-                        <TinyEditor value={field.value} onChange={field.onChange} />
+                        <TinyEditor value={field.value} onChange={field.onChange} h={250} />
                         <FormMessage />
                       </div>
                     </div>

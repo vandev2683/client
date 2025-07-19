@@ -14,28 +14,28 @@ import { useForm } from 'react-hook-form'
 import { Form, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { handleError } from '@/lib/utils'
 import { toast } from 'sonner'
-import {
-  ChangePasswordBodySchema,
-  type ChangePasswordBodyType,
-  type UserWithRoleType
-} from '@/schemaValidations/user.schema'
-import { useChangePasswordMutation } from '@/queries/useUser'
 import { useState } from 'react'
 import { Eye, EyeClosed } from 'lucide-react'
+import {
+  ChangeUserPasswordBodySchema,
+  type ChangeUserPasswordBodyType,
+  type UserDetailType
+} from '@/schemaValidations/user.schema'
+import { useChangeUserPasswordMutation } from '@/queries/useUser'
 
 export default function ChangePassword({
   userChangePassword,
   setUserChangePassword,
   onSuccess
 }: {
-  userChangePassword: UserWithRoleType | null
-  setUserChangePassword: (user: UserWithRoleType | null) => void
+  userChangePassword: UserDetailType | null
+  setUserChangePassword: (user: UserDetailType | null) => void
   onSuccess?: () => void
 }) {
   const [inputType, setInputType] = useState<'text' | 'password'>('password')
 
-  const form = useForm<Pick<ChangePasswordBodyType, 'password'>>({
-    resolver: zodResolver(ChangePasswordBodySchema),
+  const form = useForm<Pick<ChangeUserPasswordBodyType, 'password'>>({
+    resolver: zodResolver(ChangeUserPasswordBodySchema),
     defaultValues: {
       password: ''
     }
@@ -47,15 +47,15 @@ export default function ChangePassword({
     form.reset()
   }
 
-  const changePasswordMutation = useChangePasswordMutation()
-  const onSubmit = async (body: ChangePasswordBodyType) => {
-    if (changePasswordMutation.isPending || !userChangePassword?.id) return
+  const changeUserPasswordMutation = useChangeUserPasswordMutation()
+  const onSubmit = async (body: ChangeUserPasswordBodyType) => {
+    if (changeUserPasswordMutation.isPending || !userChangePassword?.id) return
     try {
       const payload = {
         userId: userChangePassword.id,
         body
       }
-      await changePasswordMutation.mutateAsync(payload)
+      await changeUserPasswordMutation.mutateAsync(payload)
       reset()
       toast.success(`Đổi mật khẩu thành công cho người dùng ${userChangePassword.name || userChangePassword.email}`)
     } catch (error) {
@@ -96,7 +96,7 @@ export default function ChangePassword({
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='password'>Mật khẩu mới</Label>
                       <div className='w-full col-span-3 space-y-2 relative'>
-                        <Input id='password' className='w-full' {...field} type={inputType} />
+                        <Input id='password' className='w-full' {...field} type={inputType} placeholder='••••••' />
                         {inputType === 'password' ? (
                           <EyeClosed
                             className='absolute right-2 top-1/2s -translate-y-1/2 h-4 w-4 cursor-pointer'

@@ -7,12 +7,13 @@ export const UserSchema = z.object({
   email: z.string().email('Email không hợp lệ').max(500),
   password: z.string().min(3, 'Mật khẩu tối thiểu 3 ký tự').max(500),
   roleId: z.coerce.number(),
-  name: z.string().min(3, 'Tên là bắt buộc').max(500),
-  phoneNumber: z.string().min(9, 'Số điện thoại là bắt buộc').max(50),
+  name: z.string().min(1, 'Tên là bắt buộc').max(500),
+  phoneNumber: z.string().min(9, 'Số điện thoại tối thiểu 9 ký tự').max(50),
   avatar: z.string().max(1000).nullable(),
   dateOfBirth: z.coerce.date().nullable(),
   totpSecret: z.string().max(1000).nullable(),
   status: z.nativeEnum(UserStatus),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })

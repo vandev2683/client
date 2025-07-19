@@ -14,6 +14,7 @@ export const AddressSchema = z.object({
   detailAddress: z.string().min(1, 'Chi tiết địa chỉ là bắt buộc').max(1000),
   deliveryNote: z.string().max(1000),
   isDefault: z.boolean(),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })

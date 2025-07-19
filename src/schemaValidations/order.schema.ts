@@ -1,5 +1,5 @@
 import { OrderStatus, OrderType } from '@/constants/order'
-import { PaymentMethod } from '@/constants/payment'
+import { PaymentMethod, PaymentStatus } from '@/constants/payment'
 import { z } from 'zod'
 import { PaymentSchema } from './payment.schema'
 import { CartItemDetailSchema } from './cart.schema'
@@ -30,6 +30,7 @@ export const OrderSchema = z.object({
   note: z.string().default(''),
   status: z.nativeEnum(OrderStatus),
   handlerId: z.number().nullable(),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })
@@ -52,14 +53,14 @@ export const OrderDetailSchema = OrderSchema.extend({
   orderItems: z.array(
     OrderItemSchema.extend({
       variant: VariantSchema.extend({
-        product: ProductSchema
-      })
+        product: ProductSchema.nullable()
+      }).nullable()
     })
   ),
   reviews: z.array(ReviewSchema),
   user: UserSchema.omit({ totpSecret: true, password: true }).nullable(),
   deliveryAddress: AddressDetailSchema.nullable(),
-  table: TableSchema.nullable(),
+  table: z.lazy(() => TableSchema.nullable()),
   booking: BookingSchema.nullable(),
   coupon: CouponSchema.nullable(),
   handler: UserSchema.omit({ totpSecret: true, password: true }).nullable()
@@ -99,6 +100,8 @@ export const CreateOnlineOrderBodySchema = OrderSchema.pick({
   .strict()
 
 export const CreateOrderResSchema = MessageResSchema.extend({
+  orderId: z.number(),
+  paymentStatus: z.nativeEnum(PaymentStatus),
   paymentUrl: z.string().optional()
 })
 

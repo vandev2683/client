@@ -13,7 +13,7 @@ export const useProfileQuery = () => {
 
 export const useProfileOrdersQuery = () => {
   return useQuery({
-    queryKey: ['profile-orders'],
+    queryKey: [BASE_KEY, 'profile-orders'],
     queryFn: profileApis.findWithOrders,
     placeholderData: keepPreviousData
   })

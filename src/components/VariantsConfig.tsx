@@ -6,8 +6,17 @@ import { Plus, Trash2, GripVertical, RefreshCcw } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { ProductVariantsType } from '@/schemaValidations/product.schema'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from './ui/dropdown-menu'
+import classNames from 'classnames'
 
 export default function VariantsConfig({
   variantsConfig,
@@ -16,6 +25,7 @@ export default function VariantsConfig({
   variantsConfig: ProductVariantsType
   setVariantsConfig: (configs: ProductVariantsType) => void
 }) {
+  const [open, setOpen] = useState(false)
   const inputRefs = useRef<Record<string, HTMLInputElement>>({})
 
   // Thêm thuộc tính mới
@@ -139,7 +149,9 @@ export default function VariantsConfig({
                     variant='outline'
                     size='sm'
                     className='flex items-center gap-2 cursor-pointer'
-                    onClick={handleResetToDefault}
+                    onClick={() => {
+                      setOpen(!open)
+                    }}
                   >
                     <RefreshCcw />
                   </Button>
@@ -150,6 +162,27 @@ export default function VariantsConfig({
               </Tooltip>
             </TooltipProvider>
           )}
+          <DropdownMenu open={open} onOpenChange={setOpen}>
+            <DropdownMenuTrigger asChild>
+              <div className='h-8'></div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end'>
+              <DropdownMenuLabel>
+                Reset về biến thể mặc định
+                <br />
+                Có thể làm mất các biến thể cũ
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <div className='flex justify-end'>
+                <DropdownMenuItem>
+                  <Button variant='outline'>No</Button>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Button onClick={handleResetToDefault}>Yes</Button>
+                </DropdownMenuItem>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             type='button'
             variant='outline'
@@ -164,7 +197,11 @@ export default function VariantsConfig({
       </div>
 
       <div className='border rounded-md'>
-        <ScrollArea className='max-h-[500px] pr-4 overflow-y-auto'>
+        <ScrollArea
+          className={classNames('pr-4', {
+            'h-[500px]': variantsConfig.length > 2
+          })}
+        >
           <div className='space-y-4 p-4'>
             {variantsConfig.map((attribute, attributeIndex) => (
               <Card key={attributeIndex} className='border border-gray-200'>

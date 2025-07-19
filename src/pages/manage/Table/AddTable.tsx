@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { handleError } from '@/lib/utils'
+import { formatTableStatus, handleError } from '@/lib/utils'
 import TinyEditor from '@/components/TinyEditor'
 import { CreateTableBodySchema, type CreateTableBodyType } from '@/schemaValidations/table.schema'
 import { useCreateTableMutation } from '@/queries/useTable'
@@ -75,7 +75,7 @@ export default function AddTable() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='code'>Mã bàn</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <Input id='code' className='w-full' {...field} />
+                        <Input id='code' className='w-full' {...field} placeholder='Mã bàn...' />
                         <FormMessage />
                       </div>
                     </div>
@@ -114,7 +114,7 @@ export default function AddTable() {
                           <SelectContent>
                             {TableStatusValues.map((value) => (
                               <SelectItem key={value} value={value}>
-                                {value}
+                                {formatTableStatus(value)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -133,7 +133,7 @@ export default function AddTable() {
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='location'>Mô tả vị trí</Label>
                       <div className='col-span-3 w-full space-y-2 '>
-                        <TinyEditor value={field.value} onChange={field.onChange} />
+                        <TinyEditor value={field.value} onChange={field.onChange} h={250} />
                         <FormMessage />
                       </div>
                     </div>

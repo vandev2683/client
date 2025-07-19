@@ -1,4 +1,4 @@
-import { ProductStatus } from '@/constants/product'
+import { ProductStatus, TypeProduct } from '@/constants/product'
 import { z } from 'zod'
 import { PaginationQuerySchema } from './request.schema'
 import { OrderBy, SortBy } from '@/constants/common'
@@ -61,14 +61,17 @@ export const ProductVariantsSchema = z.array(ProductVariantSchema).superRefine((
 
 export const ProductSchema = z.object({
   id: z.number(),
-  name: z.string().min(1).max(1000),
+  type: z.nativeEnum(TypeProduct),
+  name: z.string().max(1000),
   basePrice: z.number().nonnegative(),
+  shortDescription: z.string(),
   description: z.string(),
   images: z.array(z.string()),
   status: z.nativeEnum(ProductStatus),
   variantsConfig: ProductVariantsSchema,
-  createdAt: z.date(),
-  updatedAt: z.date()
+  deletedAt: z.coerce.date().nullable(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
 })
 
 export const VariantSchema = z.object({
@@ -78,8 +81,9 @@ export const VariantSchema = z.object({
   thumbnail: z.string().nullable(),
   price: z.number().nonnegative(),
   stock: z.number().int().nonnegative(),
-  createdAt: z.date(),
-  updatedAt: z.date()
+  deletedAt: z.coerce.date().nullable(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date()
 })
 
 export const ProductDetailSchema = ProductSchema.extend({
@@ -139,6 +143,8 @@ export const UpsertVariantBodySchema = VariantSchema.pick({
 
 export const CreateProductBodySchema = ProductSchema.pick({
   name: true,
+  type: true,
+  shortDescription: true,
   description: true,
   images: true,
   status: true,
@@ -150,7 +156,33 @@ export const CreateProductBodySchema = ProductSchema.pick({
     variants: z.array(UpsertVariantBodySchema)
   })
   .strict()
-  .superRefine(({ variantsConfig, variants }, ctx) => {
+  .superRefine(({ name, type, shortDescription, variantsConfig, variants }, ctx) => {
+    if (type === TypeProduct.Single) {
+      if (name.length < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Tên sản phẩm là bắt buộc',
+          path: ['name']
+        })
+      }
+    }
+    if (type === TypeProduct.FixedCombo || type === TypeProduct.CustomCombo) {
+      if (name.length < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Tên combo là bắt buộc',
+          path: ['name']
+        })
+      }
+      if (shortDescription.length < 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Thông tin thành phần của combo là bắt buộc',
+          path: ['shortDescription']
+        })
+      }
+    }
+
     for (let i = 0; i < variantsConfig.length; i++) {
       const variant = variantsConfig[i]
       // Kiểm tra các type có trùng lặp

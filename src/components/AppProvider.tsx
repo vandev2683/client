@@ -1,7 +1,9 @@
-import { clearLocalStorage, getProfileFromLocalStorage } from '@/lib/utils'
+import { categorySocket, orderSocket, productSocket, reviewSocket, tableSocket, tagSocket } from '@/lib/sockets'
+import { clearLocalStorage, getAccessTokenFromLocalStorage, getProfileFromLocalStorage } from '@/lib/utils'
 import type { ExtendedCartItemType } from '@/schemaValidations/cart.schema'
 import type { ProfileType } from '@/schemaValidations/profile.schema'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 
 const queryClient = new QueryClient({
@@ -62,12 +64,27 @@ export default function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const isAuth = Boolean(profile)
+  // useEffect(() => {
+  //   if (isAuth) {
+  //     ;[productSocket, categorySocket, tagSocket, tableSocket, orderSocket, reviewSocket].forEach((socket) => {
+  //       socket.auth = {
+  //         Authorization: `Bearer ${getAccessTokenFromLocalStorage()}`
+  //       }
+  //       socket.connect()
+  //     })
+  //   } else {
+  //     ;[productSocket, categorySocket, tagSocket, tableSocket, orderSocket, reviewSocket].forEach((socket) => {
+  //       socket.auth = {}
+  //       socket.disconnect()
+  //     })
+  //   }
+  // }, [isAuth])
 
   return (
     <AppContext.Provider value={{ isAuth, profile, setProfile, extendedCartItems, setExtendedCartItems, reset }}>
       <QueryClientProvider client={queryClient}>
         {children}
-        {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+        <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </AppContext.Provider>
   )

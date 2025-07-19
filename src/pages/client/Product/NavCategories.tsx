@@ -1,5 +1,4 @@
 import type React from 'react'
-
 import { useState, useRef, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { useAllCategoriesQuery } from '@/queries/useCategory'
@@ -8,13 +7,38 @@ import type { CategoryType } from '@/schemaValidations/category.schema'
 import { useSearchParams } from 'react-router'
 import { generateNameId, getIdByNameId } from '@/lib/utils'
 import { useQuery } from '@/hooks/useQuery'
+import { categorySocket } from '@/lib/sockets'
+import type { MessageResType } from '@/schemaValidations/response.schema'
+import { useAppContext } from '@/components/AppProvider'
 
 export default function FoodCategoryNav() {
+  const { isAuth } = useAppContext()
   const query = useQuery()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const categoriesQuery = useAllCategoriesQuery()
-  const categories = categoriesQuery.data?.data.data || []
+  const { data, refetch } = useAllCategoriesQuery()
+  const categories = data?.data.data || []
+
+  useEffect(() => {
+    if (isAuth) {
+      categorySocket.connect()
+    } else {
+      categorySocket.disconnect()
+      return
+    }
+
+    categorySocket.on('sended-category', (data: MessageResType) => {
+      setTimeout(() => {
+        refetch()
+      }, 10)
+    })
+
+    return () => {
+      categorySocket.off('sended-category')
+      categorySocket.disconnect()
+    }
+  }, [isAuth, refetch])
+
   const parentCategories = categories.filter((category) => category.parentCategoryId === null)
 
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | null>(null)
@@ -46,7 +70,7 @@ export default function FoodCategoryNav() {
       const isMobile = window.innerWidth < 768 // md breakpoint
       const items = isMobile ? 4 : 8 // Changed from 6 to 8 for desktop
       setVisibleItems(items)
-      setTotalPages(Math.ceil(parentCategories.length / items))
+      setTotalPages(parentCategories.length > 0 ? Math.ceil(parentCategories.length / items) : 0)
       setCurrentPage(0) // Reset to first page when changing breakpoint
     }
 
@@ -147,20 +171,20 @@ export default function FoodCategoryNav() {
   }
 
   // Handle dot click to scroll to specific page
-  const handleDotClick = (pageIndex: number) => {
-    if (!containerRef.current) return
+  // const handleDotClick = (pageIndex: number) => {
+  //   if (!containerRef.current) return
 
-    const containerWidth = containerRef.current.clientWidth
-    const scrollableWidth = containerRef.current.scrollWidth - containerWidth
-    const targetScrollLeft = (pageIndex / (totalPages - 1)) * scrollableWidth
+  //   const containerWidth = containerRef.current.clientWidth
+  //   const scrollableWidth = containerRef.current.scrollWidth - containerWidth
+  //   const targetScrollLeft = (pageIndex / (totalPages - 1)) * scrollableWidth
 
-    containerRef.current.scrollTo({
-      left: targetScrollLeft,
-      behavior: 'smooth'
-    })
+  //   containerRef.current.scrollTo({
+  //     left: targetScrollLeft,
+  //     behavior: 'smooth'
+  //   })
 
-    setCurrentPage(pageIndex)
-  }
+  //   setCurrentPage(pageIndex)
+  // }
 
   return (
     <div className='max-w-6xl mx-auto px-4 my-4'>
@@ -213,9 +237,9 @@ export default function FoodCategoryNav() {
         </div>
       </div>
 
-      {totalPages > 1 && (
+      {/* {totalPages > 1 && parentCategories.length > 0 && (
         <div className='flex justify-center mt-3 space-x-2'>
-          {Array.from({ length: totalPages }).map((_, index) => (
+          {Array.from({ length: 1 }).map((_, index) => (
             <button
               key={index}
               onClick={() => handleDotClick(index)}
@@ -226,7 +250,7 @@ export default function FoodCategoryNav() {
             />
           ))}
         </div>
-      )}
+      )} */}
     </div>
   )
 }

@@ -9,7 +9,7 @@ export default function UserSideNav() {
 
   if (!profile) return null
   return (
-    <div className='bg-white w-full h-full px-4 rounded-md shadow-sm'>
+    <div className='bg-white w-full px-4 rounded-md shadow-sm sticky top-4'>
       <div className='flex items-center border-b border-b-gray-200 py-4'>
         <Link to='/profile' className='h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border border-black/10'>
           {/* <img src={profile?.avatar } alt='' className='h-full w-full object-cover' /> */}
@@ -38,7 +38,7 @@ export default function UserSideNav() {
           </Link>
         </div>
       </div>
-      <div className='mt-7'>
+      <div className='mt-7 pb-4'>
         <NavLink
           to='/profile'
           className={({ isActive }) =>

@@ -1,5 +1,6 @@
 import http from '@/lib/http'
 import type {
+  CartItemType,
   CreateCartItemBodyType,
   DeleteCartItemsBodyType,
   GetAllCartItemsResType,
@@ -21,7 +22,7 @@ const cartApis = {
   },
 
   addToCart(body: CreateCartItemBodyType) {
-    return http.post<MessageResType>(BASE_URL, body)
+    return http.post<CartItemType>(BASE_URL, body)
   },
 
   updateCartItem(payload: { cartItemId: number; body: UpdateCartItemBodyType }) {

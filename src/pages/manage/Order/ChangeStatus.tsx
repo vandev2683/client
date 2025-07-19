@@ -1,12 +1,12 @@
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { OrderStatus, OrderStatusValues, type OrderStatusType } from '@/constants/order'
-import { handleError } from '@/lib/utils'
+import { formatOrderStatus, handleError } from '@/lib/utils'
 import { useChangeOrderStatusMutation } from '@/queries/useOrder'
-import type { GetOrderDetailResType } from '@/schemaValidations/order.schema'
+import type { OrderDetailType } from '@/schemaValidations/order.schema'
 import classNames from 'classnames'
 import { toast } from 'sonner'
 
-export default function ChangeStatus({ order }: { order: GetOrderDetailResType }) {
+export default function ChangeStatus({ order }: { order: OrderDetailType }) {
   const changeOrderStatusMutation = useChangeOrderStatusMutation()
 
   const handleChangeStatus = async (value: OrderStatusType) => {
@@ -28,10 +28,7 @@ export default function ChangeStatus({ order }: { order: GetOrderDetailResType }
 
   return (
     <Select onValueChange={handleChangeStatus} defaultValue={order.status}>
-      <SelectTrigger
-        className='p-0 w-19 border-none shadow-none hover:shadow-none focus:shadow-none flex'
-        hasIcon={false}
-      >
+      <SelectTrigger className='p-0 border-none shadow-none hover:shadow-none focus:shadow-none' hasIcon={false}>
         <span
           className={classNames('text-xs font-medium me-2 px-2.5 py-0.5 rounded-full', {
             'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300':
@@ -47,14 +44,14 @@ export default function ChangeStatus({ order }: { order: GetOrderDetailResType }
             'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300': order.status === OrderStatus.Cancelled
           })}
         >
-          {order.status}
+          {formatOrderStatus(order.status)}
         </span>
       </SelectTrigger>
 
       <SelectContent>
         {OrderStatusValues.map((status) => (
           <SelectItem key={status} value={status}>
-            {status}
+            {formatOrderStatus(status)}
           </SelectItem>
         ))}
       </SelectContent>

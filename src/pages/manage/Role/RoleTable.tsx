@@ -37,11 +37,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AutoPagination from '@/components/AutoPagination'
 import { useNavigate } from 'react-router'
 import { toast } from 'sonner'
-import { cn, handleError } from '@/lib/utils'
+import { cn, formatRoleStatus, handleError, getHtmlPlainTextTitle, formatRoleName } from '@/lib/utils'
 import EditRole from './EditRole'
 import AddRole from './AddRole'
 import type { RoleType } from '@/schemaValidations/role.schema'
 import { useAllRolesQuery, useChangeRoleStatusMutation, useDeleteRoleMutation } from '@/queries/useRole'
+import classNames from 'classnames'
 
 const RoleContext = createContext<{
   roleIdEdit: number | undefined
@@ -59,7 +60,7 @@ export const columns: ColumnDef<RoleType>[] = [
   {
     accessorKey: 'name',
     header: 'Name',
-    cell: ({ row }) => <div className='ml-4'>{row.getValue('name')}</div>
+    cell: ({ row }) => <div className='ml-4'>{formatRoleName(row.getValue('name'))}</div>
   },
 
   {
@@ -86,17 +87,16 @@ export const columns: ColumnDef<RoleType>[] = [
         }
       }
 
-      const status = row.getValue('isActive') as boolean
-      let classNameStatus =
-        'capitalize bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300'
-      if (status === false) {
-        classNameStatus =
-          'bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300'
-      }
-
+      const isActive = row.original.isActive
       return (
-        <span className={cn([classNameStatus, 'cursor-pointer'])} onClick={handleChangeStatus}>
-          {status ? 'active' : 'Inactive'}
+        <span
+          className={classNames('text-xs font-medium me-2 px-2.5 py-0.5 rounded-full capitalize cursor-pointer', {
+            'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300': isActive,
+            'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300': !isActive
+          })}
+          onClick={handleChangeStatus}
+        >
+          {formatRoleStatus(isActive)}
         </span>
       )
     }
@@ -106,9 +106,16 @@ export const columns: ColumnDef<RoleType>[] = [
     header: 'Description',
     cell: ({ row }) => {
       const description = row.getValue('description') as string
-      const match = description.match(/<p[^>]*>.*?<\/p>/i)
-      const briefDesc = match ? match[0] : description
-      return <div dangerouslySetInnerHTML={{ __html: briefDesc }} className='whitespace-pre-line' />
+      const plainTextTitle = getHtmlPlainTextTitle(description)
+      return (
+        <div className='max-w-[300px]'>
+          <div
+            dangerouslySetInnerHTML={{ __html: description }}
+            className='overflow-hidden text-ellipsis whitespace-nowrap [&>*]:inline [&>*]:whitespace-nowrap [&>*]:overflow-hidden [&>*]:text-ellipsis'
+            title={plainTextTitle}
+          />
+        </div>
+      )
     }
   },
   {

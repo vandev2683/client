@@ -19,10 +19,14 @@ const reviewApis = {
     })
   },
 
-  findDetail(query: GetReviewDetailQueryType) {
+  findDetailByProductAndOrder(query: GetReviewDetailQueryType) {
     return http.get<ReviewDetailType>(BASE_URL, {
       params: query
     })
+  },
+
+  findDetailById(reviewId: number) {
+    return http.get<ReviewDetailType>(`${BASE_URL}/${reviewId}`)
   },
 
   create(data: CreateReviewBodyType) {

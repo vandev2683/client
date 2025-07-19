@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useLocation, useNavigate } from 'react-router'
 import type { CartItemDetailType } from '@/schemaValidations/cart.schema'
 import Config from '@/constants/config'
-import { formatCurrency, handleError } from '@/lib/utils'
+import { formatCurrency, handleError, parseVariantInfo } from '@/lib/utils'
 import QuantityController from '@/components/QuantityController'
 import { Separator } from '@/components/ui/separator'
 import { useForm } from 'react-hook-form'
@@ -26,7 +24,7 @@ import {
 } from '@/schemaValidations/address.schema'
 import {
   useAllAddressesQuery,
-  useChangeDefaultAddressMutation,
+  useChangeAddressDefaultMutation,
   useCreateAddressMutation,
   useDeleteAddressMutation,
   useUpdateAddressMutation
@@ -184,9 +182,9 @@ export default function Checkout() {
     }
   }
 
-  const changeDefaultAddressMutation = useChangeDefaultAddressMutation()
-  const handleChangeDefaultAddress = async (address: AddressType) => {
-    if (changeDefaultAddressMutation.isPending) return
+  const changeAddressDefaultMutation = useChangeAddressDefaultMutation()
+  const handleChangeAddressDefault = async (address: AddressType) => {
+    if (changeAddressDefaultMutation.isPending) return
     try {
       const payload = {
         addressId: address.id,
@@ -195,7 +193,7 @@ export default function Checkout() {
         }
       }
       if (address.isDefault) {
-        await changeDefaultAddressMutation.mutateAsync(payload)
+        await changeAddressDefaultMutation.mutateAsync(payload)
         setSelectedAddressId(undefined)
         setFilteredAddresses((prev) =>
           prev.map((addr) => ({
@@ -206,7 +204,7 @@ export default function Checkout() {
         toast.success(`Địa chỉ ${address.recipientName}/${address.recipientPhone} đã hủy làm mặc định!`)
         return
       }
-      await changeDefaultAddressMutation.mutateAsync(payload)
+      await changeAddressDefaultMutation.mutateAsync(payload)
       setSelectedAddressId(address.id)
       setFilteredAddresses((prev) =>
         prev.map((addr) => ({
@@ -329,10 +327,17 @@ export default function Checkout() {
       const result = await createOnlineOrderMutation.mutateAsync(body)
       if (paymentMethod !== PaymentMethod.COD) {
         window.location.href = result.data.paymentUrl as string
+      } else {
+        navigate(`/payment-callback?status=${result.data.paymentStatus}&orderId=${result.data.orderId}`)
       }
     } catch (error) {
+      console.log('Error creating order:', error)
       handleError(error)
     }
+  }
+
+  if (cartItems.length === 0) {
+    navigate('/cart', { replace: true })
   }
 
   return (
@@ -362,7 +367,7 @@ export default function Checkout() {
                           All
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className='min-w-2xl min-h-[550px] overflow-hidden'>
+                      <DialogContent className='min-w-2xl max-h-[550px]' aria-describedby={undefined}>
                         <DialogHeader className='grid grid-cols-3'>
                           <DialogTitle className='col-span-1'>Chọn địa chỉ giao hàng</DialogTitle>
                           <Input
@@ -380,76 +385,80 @@ export default function Checkout() {
                           />
                         </DialogHeader>
                         <div className='max-h-[450px] overflow-y-auto space-y-3 pr-2'>
-                          {filteredAddresses.map((address) => (
-                            <div
-                              key={address.id}
-                              className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer transition-all ${
-                                selectedAddressId === address.id
-                                  ? 'border-blue-500 bg-blue-50'
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                            >
-                              <div
-                                className='flex flex-1 items-start justify-between'
-                                onClick={() => {
-                                  handleAddressSelect(address.id)
-                                  setIsAddressDialogOpen(false)
-                                  setFilteredAddresses(addresses)
-                                }}
-                              >
-                                <div className='flex items-center space-x-3'>
+                          {filteredAddresses && filteredAddresses.length > 0 && (
+                            <>
+                              {filteredAddresses.map((address) => (
+                                <div
+                                  key={address.id}
+                                  className={`flex items-center justify-between border rounded-lg p-4 cursor-pointer transition-all ${
+                                    selectedAddressId === address.id
+                                      ? 'border-blue-500 bg-blue-50'
+                                      : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
                                   <div
-                                    className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
-                                      selectedAddressId === address.id
-                                        ? 'border-blue-500 bg-blue-500'
-                                        : 'border-gray-300'
-                                    }`}
+                                    className='flex flex-1 items-start justify-between'
+                                    onClick={() => {
+                                      handleAddressSelect(address.id)
+                                      setIsAddressDialogOpen(false)
+                                      setFilteredAddresses(addresses)
+                                    }}
                                   >
-                                    {selectedAddressId === address.id && (
-                                      <div className='w-full h-full rounded-full bg-white scale-50'></div>
-                                    )}
-                                  </div>
-                                  <div className='min-w-0 flex-1'>
-                                    <div className='flex items-center space-x-2'>
-                                      <span className='font-medium text-gray-900'>{address.recipientName}</span>
-                                      <p className='font-medium text-gray-900'>{address.recipientPhone}</p>
-                                      {selectedAddressId === address.id && (
-                                        <span className='text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full'>
-                                          Đã chọn
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className='text-sm text-gray-600 mt-1'>
-                                      {address.detailAddress}, {address.ward.name && `${address.ward.name}, `}
-                                      {address.district.name}, {address.province.name}
-                                    </p>
+                                    <div className='flex items-center space-x-3'>
+                                      <div
+                                        className={`w-4 h-4 rounded-full border-2 flex-shrink-0 ${
+                                          selectedAddressId === address.id
+                                            ? 'border-blue-500 bg-blue-500'
+                                            : 'border-gray-300'
+                                        }`}
+                                      >
+                                        {selectedAddressId === address.id && (
+                                          <div className='w-full h-full rounded-full bg-white scale-50'></div>
+                                        )}
+                                      </div>
+                                      <div className='min-w-0 flex-1'>
+                                        <div className='flex items-center space-x-2'>
+                                          <span className='font-medium text-gray-900'>{address.recipientName}</span>
+                                          <p className='font-medium text-gray-900'>{address.recipientPhone}</p>
+                                          {selectedAddressId === address.id && (
+                                            <span className='text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full'>
+                                              Đã chọn
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className='text-sm text-gray-600 mt-1'>
+                                          {address.detailAddress}, {address.ward.name && `${address.ward.name}, `}
+                                          {address.district.name}, {address.province.name}
+                                        </p>
 
-                                    {address.deliveryNote && (
-                                      <p className='text-xs text-gray-400 italic mt-1'>
-                                        Ghi chú: {address.deliveryNote}
-                                      </p>
-                                    )}
+                                        {address.deliveryNote && (
+                                          <p className='text-xs text-gray-400 italic mt-1'>
+                                            Ghi chú: {address.deliveryNote}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className=''>
+                                    <Button
+                                      variant='ghost'
+                                      className='h-8 w-8 p-0'
+                                      onClick={() => handleChangeAddressDefault(address)}
+                                    >
+                                      <MapPinCheck className='h-4 w-4' />
+                                    </Button>
+                                    <Button
+                                      variant='ghost'
+                                      className='h-8 w-8 p-0'
+                                      onClick={() => setAddressDelete(address)}
+                                    >
+                                      <Trash2 className='h-4 w-4' />
+                                    </Button>
                                   </div>
                                 </div>
-                              </div>
-                              <div className=''>
-                                <Button
-                                  variant='ghost'
-                                  className='h-8 w-8 p-0'
-                                  onClick={() => handleChangeDefaultAddress(address)}
-                                >
-                                  <MapPinCheck className='h-4 w-4' />
-                                </Button>
-                                <Button
-                                  variant='ghost'
-                                  className='h-8 w-8 p-0'
-                                  onClick={() => setAddressDelete(address)}
-                                >
-                                  <Trash2 className='h-4 w-4' />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                              ))}
+                            </>
+                          )}
 
                           <div
                             className={`border rounded-lg p-4 cursor-pointer transition-all border-dashed ${
@@ -484,8 +493,8 @@ export default function Checkout() {
                   </div>
 
                   {/* Address Cards with Scroll - Using ScrollArea component */}
-                  <div className='max-h-85 overflow-hidden'>
-                    <ScrollArea className='h-85'>
+                  <div style={{ maxHeight: addresses.length <= 3 ? 'auto' : '340px' }} className='overflow-hidden'>
+                    <ScrollArea className={addresses.length <= 3 ? '' : 'h-85'}>
                       <div className='pr-3 space-y-3' ref={addressScrollRef}>
                         {(() => {
                           // Sort addresses: selected first, then others
@@ -816,155 +825,175 @@ export default function Checkout() {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className='text-xl font-semibold'>Order Summary</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              {orderItems.length > 0 && (
-                <div className={`${orderItems.length > 6 ? 'max-h-170 overflow-hidden' : ''}`}>
-                  <ScrollArea className={orderItems.length > 6 ? 'h-170' : ''}>
-                    <div className='pr-3 space-y-1'>
-                      {orderItems.map((item) => (
-                        <div key={item.id} className='flex items-center space-x-4 py-4 border-b last:border-b-0'>
-                          <img
-                            src={item.variant.thumbnail || item.variant.product.images[0] || Config.ImageBaseUrl}
-                            alt={item.variant.value}
-                            className='w-16 h-16 object-cover rounded-lg bg-gray-100'
-                          />
-                          <div className='flex-1'>
-                            <h3 className='font-medium text-gray-900'>{item.variant.product.name}</h3>
-                            <p className='text-sm text-gray-500'>{item.variant.value}</p>
-                            <p className='font-semibold text-gray-900'>{formatCurrency(item.variant.price)}</p>
-                          </div>
-                          <div className=' flex flex-col gap-4'>
-                            <QuantityController
-                              onIncrease={(value) => handleQuantityChange(item.id, value)}
-                              onDecrease={(value) => handleQuantityChange(item.id, value)}
-                              onType={(value) => handleQuantityChange(item.id, value)}
-                              onFocusOut={(value) => handleQuantityChange(item.id, value)}
-                              value={item.quantity}
-                              max={item.variant.stock}
+          {/* Right Column - Order Summary */}
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle className='text-xl font-semibold'>Order Summary</CardTitle>
+              </CardHeader>
+              <CardContent className='space-y-4 pb-2'>
+                {orderItems.length > 0 && (
+                  <div className={`${orderItems.length > 6 ? 'max-h-170 overflow-hidden' : ''}`}>
+                    <ScrollArea className={orderItems.length > 6 ? 'h-170' : ''}>
+                      <div className='pr-3 space-y-1'>
+                        {orderItems.map((item) => (
+                          <div key={item.id} className='flex items-center space-x-4 py-4 border-b last:border-b-0'>
+                            <img
+                              src={item.variant.thumbnail || item.variant.product.images[0] || Config.ImageBaseUrl}
+                              alt={item.variant.value}
+                              className='w-16 h-16 object-cover rounded-lg bg-gray-100'
                             />
+                            <div className='flex-1'>
+                              <h3 className='font-medium text-gray-900'>{item.variant.product.name}</h3>
+                              <div className='mt-1 flex flex-col items-start'>
+                                {(() => {
+                                  const variantInfo = parseVariantInfo(
+                                    item.variant.value,
+                                    item.variant.product.variantsConfig
+                                  )
+                                  if (!variantInfo || variantInfo.length === 0) {
+                                    return (
+                                      <span className='text-[0.8rem] text-gray-600'>Type: {item.variant.value}</span>
+                                    )
+                                  }
+                                  return variantInfo.map((info) => (
+                                    <span key={info.type} className='text-[0.8rem] text-gray-600'>
+                                      {info.type}: {info.value}
+                                    </span>
+                                  ))
+                                })()}
+                              </div>
+                              <p className='font-semibold text-gray-900'>{formatCurrency(item.variant.price)}</p>
+                            </div>
+                            <div className=' flex flex-col gap-4'>
+                              <QuantityController
+                                onIncrease={(value) => handleQuantityChange(item.id, value)}
+                                onDecrease={(value) => handleQuantityChange(item.id, value)}
+                                onType={(value) => handleQuantityChange(item.id, value)}
+                                onFocusOut={(value) => handleQuantityChange(item.id, value)}
+                                value={item.quantity}
+                                max={item.variant.stock}
+                              />
+                            </div>
+
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              className='h-8 w-8 text-red-500 hover:text-red-700'
+                              onClick={() => removeItem(item.id)}
+                            >
+                              <Trash2 className='h-4 w-4' />
+                            </Button>
                           </div>
-
-                          <Button
-                            variant='ghost'
-                            size='icon'
-                            className='h-8 w-8 text-red-500 hover:text-red-700'
-                            onClick={() => removeItem(item.id)}
-                          >
-                            <Trash2 className='h-4 w-4' />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </div>
-              )}
-
-              <div className='space-y-2 pt-4'>
-                <div className='flex justify-between'>
-                  <span>Subtotal</span>
-                  <span>{formatCurrency(totalAmount)}</span>
-                </div>
-                <div className='flex justify-between'>
-                  <span>Shipping</span>
-                  <span>{formatCurrency(OrderFee.Delivery)}</span>
-                </div>
-                <div className='flex justify-between'>
-                  <span>Tax</span>
-                  <span>{OrderFee.TaxRate * 100}%</span>
-                </div>
-                <div className='flex'>
-                  <Input
-                    className='flex-1'
-                    placeholder='Mã giảm giá...'
-                    onChange={(e) => {
-                      const value = e.target.value
-                      setCouponCode(value)
-                    }}
-                  />
-                  <Button variant='outline' onClick={handleSelectedCoupon}>
-                    Áp dụng
-                  </Button>
-                </div>
-                {selectedCoupon && (
-                  <div className='flex justify-between'>
-                    <span>Discount</span>
-                    <span>
-                      {selectedCoupon.code} (-
-                      {selectedCoupon.discountType === CouponDiscountType.Percent
-                        ? `${selectedCoupon.discountValue}%`
-                        : formatCurrency(selectedCoupon.discountValue)}
-                      )
-                    </span>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </div>
                 )}
-                <div className='flex justify-between font-semibold text-lg pt-2 text-primary'>
-                  <span>Total</span>
-                  <span>{formatCurrency(finalAmount)}</span>
-                </div>
-              </div>
-              <Separator />
-              <>
-                <div className='text-xl font-semibold'>Payment</div>
-                <RadioGroup
-                  value={paymentMethod}
-                  onValueChange={(value) => setPaymentMethod(value as PaymentMethodType)}
-                  className='space-y-4'
-                >
-                  <div className='flex flex-wrap gap-6'>
-                    <div className='flex items-center space-x-2'>
-                      <RadioGroupItem value={PaymentMethod.VNPay} id={PaymentMethod.VNPay} />
-                      <Label htmlFor={PaymentMethod.VNPay} className='flex items-center space-x-2'>
-                        <span>VNPay</span>
-                        <div className='flex space-x-1 w-10 h-10'>
-                          <img src={Config.VNPayIamgeUrl} alt='VNPay' className='w-full h-full object-cover' />
-                        </div>
-                      </Label>
-                    </div>
-                    <div className='flex items-center space-x-2'>
-                      <RadioGroupItem value={PaymentMethod.MOMO} id={PaymentMethod.MOMO} />
-                      <Label htmlFor={PaymentMethod.MOMO} className='flex items-center space-x-2'>
-                        <span>MOMO</span>
-                        <div className='flex space-x-1 w-10 h-10'>
-                          <img src={Config.MomoImageUrl} alt='Momo' className='w-full h-full object-cover' />
-                        </div>
-                      </Label>
-                    </div>
-                    <div className='flex items-center space-x-2'>
-                      <RadioGroupItem value={PaymentMethod.COD} id={PaymentMethod.COD} />
-                      <Label htmlFor={PaymentMethod.COD} className='flex items-center space-x-2'>
-                        <span>Thanh toán khi nhận hàng</span>
-                      </Label>
-                    </div>
+
+                <div className='space-y-2 pt-4'>
+                  <div className='flex justify-between'>
+                    <span>Subtotal</span>
+                    <span>{formatCurrency(totalAmount)}</span>
                   </div>
-                </RadioGroup>
-              </>
-              <div>
-                <Textarea
-                  placeholder='Ghi chú thêm cho đơn hàng (nếu có)...'
-                  value={orderNote}
-                  onChange={(e) => {
-                    setOrderNote(e.target.value)
-                  }}
-                ></Textarea>
-              </div>
-              <div className='flex flex-col sm:flex-row gap-4 pt-4'>
-                <Button
-                  variant='outline'
-                  className='flex-1 bg-transparent cursor-pointer'
-                  onClick={() => navigate('/')}
-                >
-                  Tiếp tục mua sắm
-                </Button>
-                <Button className='flex-1 cursor-pointer capitalize' onClick={handleOrder}>
-                  Thanh Toán
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                  <div className='flex justify-between'>
+                    <span>Shipping</span>
+                    <span>{formatCurrency(OrderFee.Delivery)}</span>
+                  </div>
+                  <div className='flex justify-between'>
+                    <span>Tax</span>
+                    <span>{OrderFee.TaxRate * 100}%</span>
+                  </div>
+                  <div className='flex'>
+                    <Input
+                      className='flex-1'
+                      placeholder='Mã giảm giá...'
+                      onChange={(e) => {
+                        const value = e.target.value
+                        setCouponCode(value)
+                      }}
+                    />
+                    <Button variant='outline' onClick={handleSelectedCoupon}>
+                      Áp dụng
+                    </Button>
+                  </div>
+                  {selectedCoupon && (
+                    <div className='flex justify-between'>
+                      <span>Discount</span>
+                      <span>
+                        {selectedCoupon.code} (-
+                        {selectedCoupon.discountType === CouponDiscountType.Percent
+                          ? `${selectedCoupon.discountValue}%`
+                          : formatCurrency(selectedCoupon.discountValue)}
+                        )
+                      </span>
+                    </div>
+                  )}
+                  <div className='flex justify-between font-semibold text-lg pt-2 text-primary'>
+                    <span>Total</span>
+                    <span>{formatCurrency(finalAmount)}</span>
+                  </div>
+                </div>
+                <Separator />
+                <>
+                  <div className='text-xl font-semibold'>Payment</div>
+                  <RadioGroup
+                    value={paymentMethod}
+                    onValueChange={(value) => setPaymentMethod(value as PaymentMethodType)}
+                    className='space-y-4'
+                  >
+                    <div className='flex flex-wrap gap-6'>
+                      <div className='flex items-center space-x-2'>
+                        <RadioGroupItem value={PaymentMethod.VNPay} id={PaymentMethod.VNPay} />
+                        <Label htmlFor={PaymentMethod.VNPay} className='flex items-center space-x-2'>
+                          <span>VNPay</span>
+                          <div className='flex space-x-1 w-10 h-10'>
+                            <img src={Config.VNPayIamgeUrl} alt='VNPay' className='w-full h-full object-cover' />
+                          </div>
+                        </Label>
+                      </div>
+                      <div className='flex items-center space-x-2'>
+                        <RadioGroupItem value={PaymentMethod.MOMO} id={PaymentMethod.MOMO} />
+                        <Label htmlFor={PaymentMethod.MOMO} className='flex items-center space-x-2'>
+                          <span>MOMO</span>
+                          <div className='flex space-x-1 w-10 h-10'>
+                            <img src={Config.MomoImageUrl} alt='Momo' className='w-full h-full object-cover' />
+                          </div>
+                        </Label>
+                      </div>
+                      <div className='flex items-center space-x-2'>
+                        <RadioGroupItem value={PaymentMethod.COD} id={PaymentMethod.COD} />
+                        <Label htmlFor={PaymentMethod.COD} className='flex items-center space-x-2'>
+                          <span>Thanh toán khi nhận hàng</span>
+                        </Label>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                </>
+                <div>
+                  <Textarea
+                    placeholder='Ghi chú thêm cho đơn hàng (nếu có)...'
+                    value={orderNote}
+                    onChange={(e) => {
+                      setOrderNote(e.target.value)
+                    }}
+                  ></Textarea>
+                </div>
+                <div className='flex flex-col sm:flex-row gap-4 pt-4'>
+                  <Button
+                    variant='outline'
+                    className='flex-1 bg-transparent cursor-pointer'
+                    onClick={() => navigate('/')}
+                  >
+                    Tiếp tục mua sắm
+                  </Button>
+                  <Button className='flex-1 cursor-pointer capitalize' onClick={handleOrder}>
+                    Thanh Toán
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
       {addressDelete && (

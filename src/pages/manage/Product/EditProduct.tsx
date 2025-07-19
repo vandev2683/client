@@ -10,15 +10,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Package, RefreshCcw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { handleError } from '@/lib/utils'
+import { formatProductStatus, formatTypeProduct, handleError } from '@/lib/utils'
 import { useUploadImagesMutation } from '@/queries/useMedia'
-import { useProductDetailQuery, useUpdateProductMutation } from '@/queries/useManageProduct'
+import { useProductDetailQuery, useUpdateProductMutation } from '@/queries/useProduct'
 import ImageUpload from '@/components/ImageUpload'
 import { UpdateProductBodySchema, type UpdateProductBodyType } from '@/schemaValidations/product.schema'
 import { useAllCategoriesQuery } from '@/queries/useCategory'
@@ -28,8 +27,7 @@ import TinyEditor from '@/components/TinyEditor'
 import { Separator } from '@/components/ui/separator'
 import VariantsConfig from '@/components/VariantsConfig'
 import VariantsList from '@/components/VariantsList'
-import { ProductStatusValues } from '@/constants/product'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ProductStatusValues, TypeProduct, TypeProductValues } from '@/constants/product'
 
 export default function EditProduct({
   id,
@@ -46,6 +44,8 @@ export default function EditProduct({
     resolver: zodResolver(UpdateProductBodySchema),
     defaultValues: {
       name: '',
+      type: TypeProduct.Single,
+      shortDescription: '',
       description: '',
       images: [],
       status: 'Pending',
@@ -61,6 +61,7 @@ export default function EditProduct({
     }
   })
 
+  const type = form.watch('type')
   const variantsConfig = form.watch('variantsConfig')
   const categoriesWatch = form.watch('categories')
   const tagsWatch = form.watch('tags')
@@ -74,10 +75,12 @@ export default function EditProduct({
   const productDetailQuery = useProductDetailQuery(id)
   useEffect(() => {
     if (productDetailQuery.data) {
-      const { name, description, images, status, tags, variantsConfig, categories, variants } =
+      const { name, description, images, status, tags, variantsConfig, categories, variants, type, shortDescription } =
         productDetailQuery.data.data
       form.reset({
         name,
+        type,
+        shortDescription,
         description,
         images: images || [],
         status,
@@ -148,7 +151,7 @@ export default function EditProduct({
 
       await updateProductMutation.mutateAsync(payload)
       reset()
-      toast.success('Sửa sản phẩm thành công')
+      toast.success(`Sửa ${type === TypeProduct.Single ? 'sản phẩm' : 'combo'} thành công`)
     } catch (error) {
       handleError(error, form.setError)
     }
@@ -165,21 +168,50 @@ export default function EditProduct({
     >
       <DialogContent className='sm:max-w-[750px] max-h-screen overflow-auto' aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>Cập nhật sản phẩm</DialogTitle>
+          <DialogTitle>Cập nhật {type === TypeProduct.Single ? 'sản phẩm' : 'combo'}</DialogTitle>
           <DialogDescription>
-            Các trường sau đây là bắt buộc: Tên, trạng thái, giá (nếu không có biến thể)
+            Lưu ý: Giá của {type === TypeProduct.Single ? 'sản phẩm' : 'combo'} sẽ được tính theo giá của biến thể có
+            giá nhỏ nhất trong {type === TypeProduct.Single ? 'sản phẩm' : 'combo'} này.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form
             noValidate
             className='grid auto-rows-max items-start gap-4 md:gap-8 z-50'
-            id='edit-product-form'
+            id='edit-form'
             onSubmit={form.handleSubmit(onSubmit, (error) => {
               console.log(error)
             })}
           >
             <div className='grid gap-4 py-4'>
+              <FormField
+                control={form.control}
+                name='type'
+                render={({ field }) => (
+                  <FormItem>
+                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                      <Label htmlFor='type'>Loại sản phẩm</Label>
+                      <div className='col-span-3 w-full space-y-2'>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled>
+                          <FormControl id='type'>
+                            <SelectTrigger className='w-[50%] bg-gray-100'>
+                              <SelectValue placeholder='Chọn loại sản phẩm' />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {TypeProductValues.map((val) => (
+                              <SelectItem key={val} value={val}>
+                                {formatTypeProduct(val)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </div>
+                    </div>
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name='images'
@@ -188,7 +220,7 @@ export default function EditProduct({
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label htmlFor='name'>Ảnh minh họa</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <ImageUpload files={files} setFiles={setFiles} />
+                        <ImageUpload files={files} setFiles={setFiles} isMultiUpload={type === TypeProduct.Single} />
                         <FormMessage />
                       </div>
                     </div>
@@ -201,9 +233,9 @@ export default function EditProduct({
                 render={({ field }) => (
                   <FormItem>
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
-                      <Label htmlFor='name'>Tên sản phẩm</Label>
+                      <Label htmlFor='name'>Tên {type === TypeProduct.Single ? 'sản phẩm' : 'combo'}</Label>
                       <div className='col-span-3 w-full space-y-2'>
-                        <Input id='name' className='w-full' {...field} />
+                        <Input id='name' className='w-full' placeholder='Tên...' {...field} />
                         <FormMessage />
                       </div>
                     </div>
@@ -227,7 +259,7 @@ export default function EditProduct({
                           <SelectContent>
                             {ProductStatusValues.map((val) => (
                               <SelectItem key={val} value={val}>
-                                {val}
+                                {formatProductStatus(val)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -238,6 +270,30 @@ export default function EditProduct({
                   </FormItem>
                 )}
               />
+              {type !== TypeProduct.Single && (
+                <FormField
+                  control={form.control}
+                  name='shortDescription'
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                        <Label htmlFor='shortDescription'>Thông tin thành phần</Label>
+                        <div className='col-span-3 w-full space-y-2'>
+                          <TinyEditor
+                            value={field.value}
+                            onChange={field.onChange}
+                            h={200}
+                            lineHeight={1.2}
+                            toolbar='undo redo | bullist numlist'
+                          />
+                          <FormMessage />
+                        </div>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
+              <Separator />
               <FormField
                 control={form.control}
                 name='categories'
@@ -307,9 +363,9 @@ export default function EditProduct({
                 render={({ field }) => (
                   <FormItem>
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
-                      <Label htmlFor='description'>Mô tả sản phẩm</Label>
+                      <Label htmlFor='description'>Mô tả {type === TypeProduct.Single ? 'sản phẩm' : 'combo'}</Label>
                       <div className='col-span-3 w-full space-y-2 '>
-                        <TinyEditor value={field.value} onChange={field.onChange} />
+                        <TinyEditor value={field.value} onChange={field.onChange} h={300} />
                         <FormMessage />
                       </div>
                     </div>
@@ -318,23 +374,25 @@ export default function EditProduct({
               />
 
               <Separator />
-              <FormField
-                control={form.control}
-                name='variantsConfig'
-                render={({ field }) => (
-                  <FormItem>
-                    <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
-                      <Label htmlFor='variantsConfig'>Tạo biến thể</Label>
-                      <div className='col-span-3 w-full space-y-2 '>
-                        <VariantsConfig variantsConfig={field.value} setVariantsConfig={field.onChange} />
-                        <div>
-                          <FormMessage />
+              {type !== TypeProduct.FixedCombo && (
+                <FormField
+                  control={form.control}
+                  name='variantsConfig'
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
+                        <Label htmlFor='variantsConfig'>Tạo biến thể</Label>
+                        <div className='col-span-3 w-full space-y-2 '>
+                          <VariantsConfig variantsConfig={field.value} setVariantsConfig={field.onChange} />
+                          <div>
+                            <FormMessage />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </FormItem>
-                )}
-              />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <Separator />
               <FormField
@@ -345,13 +403,22 @@ export default function EditProduct({
                     <div className='grid grid-cols-4 items-center justify-items-start gap-4'>
                       <Label className='text-sm font-medium'>Danh sách biến thể</Label>
                       <div className='col-span-3 w-full space-y-2 '>
-                        <VariantsList
-                          imagesExists={productDetailQuery.data?.data.images || []}
-                          variantsInDB={productDetailQuery.data?.data.variants || []}
-                          variantsConfig={variantsConfig}
-                          variants={field.value}
-                          setVariants={field.onChange}
-                        />
+                        {type === TypeProduct.Single ? (
+                          <VariantsList
+                            imagesExists={productDetailQuery.data?.data.images || []}
+                            variantsInDB={productDetailQuery.data?.data.variants || []}
+                            variantsConfig={variantsConfig}
+                            variants={field.value}
+                            setVariants={field.onChange}
+                          />
+                        ) : (
+                          <VariantsList
+                            variantsInDB={productDetailQuery.data?.data.variants || []}
+                            variantsConfig={variantsConfig}
+                            variants={field.value}
+                            setVariants={field.onChange}
+                          />
+                        )}
                         <div>
                           <FormMessage />
                         </div>
@@ -546,7 +613,7 @@ export default function EditProduct({
           </form>
         </Form>
         <DialogFooter className='flex items-center gap-4'>
-          <Button type='submit' form='edit-product-form'>
+          <Button type='submit' form='edit-form'>
             Cập nhật
           </Button>
         </DialogFooter>

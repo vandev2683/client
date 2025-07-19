@@ -61,16 +61,13 @@ export default function ImageUpload({
           if (typeof file === 'string') {
             return (
               <div key={index} className={classNamePreview}>
-                <img src={file} alt='preview' className='w-full h-full object-cover' />
-                <div className='absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-50 flex justify-center items-center gap-2'>
-                  <div className='p-1 bg-white rounded-full hover:bg-gray-200' onClick={() => setSelectedImage(file)}>
-                    <Eye size={16} />
+                <img src={file} alt='preview' className='w-full h-full object-contain' />
+                <div className='absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-50 flex justify-center items-center gap-3'>
+                  <div className='text-white rounded-full' onClick={() => setSelectedImage(file)}>
+                    <Eye className='w-5 h-5' />
                   </div>
-                  <div
-                    className='p-1 bg-red-500 text-white rounded-full hover:bg-red-600'
-                    onClick={() => handleDeleteImage(index)}
-                  >
-                    <Trash2 size={16} />
+                  <div className='text-white rounded-full' onClick={() => handleDeleteImage(index)}>
+                    <Trash2 className='w-5 h-5' />
                   </div>
                 </div>
               </div>
@@ -78,19 +75,16 @@ export default function ImageUpload({
           } else {
             return (
               <div key={index} className={classNamePreview}>
-                <img src={URL.createObjectURL(file)} alt='preview' className='w-full h-full object-cover' />
-                <div className='absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-50 flex justify-center items-center gap-2'>
+                <img src={URL.createObjectURL(file)} alt='preview' className='w-full h-full object-contain' />
+                <div className='absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-50 flex justify-center items-center gap-3'>
                   <div
-                    className='p-1 bg-white rounded-full hover:bg-gray-200'
+                    className='text-white cursor-pointer'
                     onClick={() => setSelectedImage(URL.createObjectURL(file))}
                   >
-                    <Eye size={16} />
+                    <Eye className='w-5 h-5' />
                   </div>
-                  <div
-                    className='p-1 bg-red-500 text-white rounded-full hover:bg-red-600'
-                    onClick={() => handleDeleteImage(index)}
-                  >
-                    <Trash2 size={16} />
+                  <div className='text-white cursor-pointer' onClick={() => handleDeleteImage(index)}>
+                    <Trash2 className='w-5 h-5' />
                   </div>
                 </div>
               </div>

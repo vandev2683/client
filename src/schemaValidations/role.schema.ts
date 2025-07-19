@@ -6,6 +6,7 @@ export const RoleSchema = z.object({
   name: z.string().min(1, 'Tên vai trò là bắt buộc').max(500),
   description: z.string(),
   isActive: z.coerce.boolean(),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })

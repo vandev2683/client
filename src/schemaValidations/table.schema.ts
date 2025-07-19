@@ -9,13 +9,14 @@ export const TableSchema = z.object({
   capacity: z.coerce.number().int().positive('Sức chứa bàn phải lớn hơn 0'),
   status: z.nativeEnum(TableStatus),
   location: z.string().max(1000),
+  deletedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
 })
 
 export const TableDetailSchema = TableSchema.extend({
   bookings: z.array(BookingSchema),
-  orders: z.array(OrderSchema)
+  orders: z.lazy(() => z.array(OrderSchema))
 })
 
 export const TableParamsSchema = z.object({
